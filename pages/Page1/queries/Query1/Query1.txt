@@ -1,0 +1,38 @@
+SELECT  
+    ws.id,
+    ws.session_date,
+    ws.start_datetime,
+    ws.end_datetime,
+    ws.duration_hours,
+    ws.calculated_salary,
+    ws.is_paid,
+    e.id as employee_id,
+    e.full_name as employee_name,
+    p.id as project_id,
+    p.project_name,
+    p.project_address,
+    hr.price_per_hour as hourly_rate,
+    (SELECT COUNT(*) FROM photos_videos pv WHERE pv.work_session_id = ws.id) as media_count,
+    (SELECT nw.note_text FROM notes_warnings nw WHERE nw.work_session_id = ws.id LIMIT 1) as note_text,
+    (SELECT nt.note_type_name FROM note_types nt WHERE nt.id = (SELECT nw.note_type_id FROM notes_warnings nw WHERE nw.work_session_id = ws.id LIMIT 1)) as note_type
+FROM work_session ws
+INNER JOIN employees e ON ws.employee_id = e.id
+INNER JOIN projects p ON ws.project_id = p.id
+INNER JOIN hourly_rate hr ON ws.hourly_rate_id = hr.id
+WHERE 1=1
+    -- Выбор сотрудника (Select/Dropdown)
+    AND ({{ SelectEmployee.selectedOptionValue || null }} IS NULL OR ws.employee_id = {{ SelectEmployee.selectedOptionValue }})
+
+    -- Выбор проекта (Select/Dropdown)
+    AND ({{ SelectProject.selectedOptionValue || null }} IS NULL OR ws.project_id = {{ SelectProject.selectedOptionValue }})
+
+    -- Фильтр даты начала (DatePicker)
+    AND ({{ DatePickerStart.selectedDate || null }} IS NULL OR ws.start_datetime >= {{ DatePickerStart.selectedDate }})
+
+    -- Фильтр даты окончания (DatePicker)
+    AND ({{ DatePickerEnd.selectedDate || null }} IS NULL OR ws.end_datetime <= {{ DatePickerEnd.selectedDate }})
+
+    -- Статус оплаты (Select со значениями true/false/null или Checkbox)
+    AND ({{ SelectIsPaid.selectedOptionValue || null }} IS NULL OR ws.is_paid = {{ SelectIsPaid.selectedOptionValue }})
+
+ORDER BY ws.start_datetime DESC;

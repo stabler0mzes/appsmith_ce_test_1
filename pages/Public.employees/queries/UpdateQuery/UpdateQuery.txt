@@ -1,0 +1,13 @@
+UPDATE public."employees" SET
+		"name" = '{{update_form.fieldState.name.isVisible ? update_form.formData.name : update_form.sourceData.name}}',
+		"is_active" = '{{update_form.fieldState.is_active.isVisible ? update_form.formData.is_active : update_form.sourceData.is_active}}',
+    "surname" = '{{update_form.fieldState.surname.isVisible ? update_form.formData.surname : update_form.sourceData.surname}}',
+		"position" = '{{update_form.fieldState.position.isVisible ? update_form.formData.position : update_form.sourceData.position}}',
+		"contact_information" = '{{update_form.fieldState.contact_information.isVisible ? update_form.formData.contact_information : update_form.sourceData.contact_information}}',
+		"telegram_id" = '{{update_form.fieldState.telegram_id.isVisible ? update_form.formData.telegram_id : update_form.sourceData.telegram_id}}',
+		"tg_username" = '{{update_form.fieldState.tg_username.isVisible ? update_form.formData.tg_username : update_form.sourceData.tg_username}}',
+		"phone_number" = '{{update_form.fieldState.phone_number.isVisible ? update_form.formData.phone_number : update_form.sourceData.phone_number}}',
+		"avatar_url" = '{{update_form.fieldState.avatar_url.isVisible ? update_form.formData.avatar_url : update_form.sourceData.avatar_url}}',
+		"preferred_language" = '{{update_form.fieldState.preferred_language.isVisible ? update_form.formData.preferred_language : update_form.sourceData.preferred_language}}',
+		"workhour_price_id" = '{{update_form.fieldState.workhour_price_id.isVisible ? update_form.formData.workhour_price_id : update_form.sourceData.workhour_price_id}}'
+	WHERE "id" = {{data_table.selectedRow.id}};
