@@ -20,6 +20,10 @@
     {
       "id": "Page1",
       "isDefault": true
+    },
+    {
+      "id": "ai_test",
+      "isDefault": false
     }
   ],
   "unpublishedApplicationDetail": {
