@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Регистрация</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #999999);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 1px solid var(--tg-theme-hint-color, #dddddd);
+            border-radius: 8px;
+            background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000000);
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #3390ec);
+        }
+
+        input::placeholder {
+            color: var(--tg-theme-hint-color, #999999);
+        }
+
+        .error {
+            color: #ff3b30;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .privacy {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999999);
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid var(--tg-theme-hint-color, #dddddd);
+            border-top: 3px solid var(--tg-theme-button-color, #3390ec);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success {
+            text-align: center;
+            padding: 40px 20px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <form id="registrationForm">
+            <h1 id="formTitle">Регистрация сотрудника</h1>
+            <p class="subtitle" id="formSubtitle">Заполните форму для регистрации в системе</p>
+
+            <div class="form-group">
+                <label for="name" id="labelName">Имя *</label>
+                <input type="text" id="name" name="name" required placeholder="Введите имя">
+                <div class="error" id="errorName">Обязательное поле</div>
+            </div>
+
+            <div class="form-group">
+                <label for="surname" id="labelSurname">Фамилия *</label>
+                <input type="text" id="surname" name="surname" required placeholder="Введите фамилию">
+                <div class="error" id="errorSurname">Обязательное поле</div>
+            </div>
+
+            <div class="form-group">
+                <label for="phone" id="labelPhone">Номер телефона *</label>
+                <input type="tel" id="phone" name="phone" required placeholder="+380XXXXXXXXX">
+                <div class="error" id="errorPhone">Введите корректный номер телефона</div>
+            </div>
+
+            <div class="form-group">
+                <label for="language" id="labelLanguage">Язык интерфейса</label>
+                <select id="language" name="language">
+                    <option value="ru">Русский</option>
+                    <option value="uk">Українська</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+
+            <p class="privacy" id="privacyText">
+                Нажимая кнопку, вы соглашаетесь с обработкой персональных данных
+            </p>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Отправка данных...</p>
+        </div>
+
+        <div class="success" id="success">
+            <div class="success-icon">✅</div>
+            <h2>Регистрация завершена!</h2>
+            <p style="margin-top: 12px;">Спасибо за регистрацию!</p>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // Получение данных пользователя из Telegram
+        const initData = tg.initDataUnsafe;
+        const user = initData.user || {};
+        
+        // Определение языка
+        const userLanguage = user.language_code || 'uk';
+        const supportedLanguages = ['ru', 'uk', 'en'];
+        const currentLanguage = supportedLanguages.includes(userLanguage) ? userLanguage : 'uk';
+
+        // Словарь переводов
+        const translations = {
+            ru: {
+                formTitle: 'Регистрация сотрудника',
+                formSubtitle: 'Заполните форму для регистрации в системе',
+                labelName: 'Имя *',
+                labelSurname: 'Фамилия *',
+                labelPhone: 'Номер телефона *',
+                labelLanguage: 'Язык интерфейса',
+                privacyText: 'Нажимая кнопку, вы соглашаетесь с обработкой персональных данных',
+                errorName: 'Обязательное поле',
+                errorSurname: 'Обязательное поле',
+                errorPhone: 'Введите корректный номер телефона',
+                loading: 'Отправка данных...',
+                successTitle: 'Регистрация завершена!',
+                successMessage: 'Спасибо за регистрацию!',
+                buttonText: 'Зарегистрироваться',
+                namePlaceholder: 'Введите имя',
+                surnamePlaceholder: 'Введите фамилию',
+                phonePlaceholder: '+380XXXXXXXXX'
+            },
+            uk: {
+                formTitle: 'Реєстрація співробітника',
+                formSubtitle: 'Заповніть форму для реєстрації в системі',
+                labelName: "Ім'я *",
+                labelSurname: 'Прізвище *',
+                labelPhone: 'Номер телефону *',
+                labelLanguage: 'Мова інтерфейсу',
+                privacyText: 'Натискаючи кнопку, ви погоджуєтеся з обробкою персональних даних',
+                errorName: "Обов'язкове поле",
+                errorSurname: "Обов'язкове поле",
+                errorPhone: 'Введіть коректний номер телефону',
+                loading: 'Відправка даних...',
+                successTitle: 'Реєстрацію завершено!',
+                successMessage: 'Дякуємо за реєстрацію!',
+                buttonText: 'Зареєструватися',
+                namePlaceholder: "Введіть ім'я",
+                surnamePlaceholder: 'Введіть прізвище',
+                phonePlaceholder: '+380XXXXXXXXX'
+            },
+            en: {
+                formTitle: 'Employee Registration',
+                formSubtitle: 'Fill out the form to register in the system',
+                labelName: 'Name *',
+                labelSurname: 'Surname *',
+                labelPhone: 'Phone Number *',
+                labelLanguage: 'Interface Language',
+                privacyText: 'By clicking the button, you agree to the processing of personal data',
+                errorName: 'Required field',
+                errorSurname: 'Required field',
+                errorPhone: 'Enter a valid phone number',
+                loading: 'Sending data...',
+                successTitle: 'Registration completed!',
+                successMessage: 'Thank you for registering!',
+                buttonText: 'Register',
+                namePlaceholder: 'Enter name',
+                surnamePlaceholder: 'Enter surname',
+                phonePlaceholder: '+380XXXXXXXXX'
+            }
+        };
+
+        // Применение переводов
+        const t = translations[currentLanguage];
+        document.getElementById('formTitle').textContent = t.formTitle;
+        document.getElementById('formSubtitle').textContent = t.formSubtitle;
+        document.getElementById('labelName').textContent = t.labelName;
+        document.getElementById('labelSurname').textContent = t.labelSurname;
+        document.getElementById('labelPhone').textContent = t.labelPhone;
+        document.getElementById('labelLanguage').textContent = t.labelLanguage;
+        document.getElementById('privacyText').textContent = t.privacyText;
+        document.getElementById('errorName').textContent = t.errorName;
+        document.getElementById('errorSurname').textContent = t.errorSurname;
+        document.getElementById('errorPhone').textContent = t.errorPhone;
+        document.getElementById('name').placeholder = t.namePlaceholder;
+        document.getElementById('surname').placeholder = t.surnamePlaceholder;
+        document.getElementById('phone').placeholder = t.phonePlaceholder;
+
+        // Предзаполнение формы данными из Telegram
+        document.getElementById('name').value = user.first_name || '';
+        document.getElementById('surname').value = user.last_name || '';
+        document.getElementById('language').value = currentLanguage;
+
+        // Настройка кнопки MainButton
+        tg.MainButton.setText(t.buttonText);
+        tg.MainButton.show();
+        tg.MainButton.enable();
+
+        // Валидация телефона
+        function validatePhone(phone) {
+            // Принимаем любые номера с + и цифрами, минимум 10 цифр
+            const phoneRegex = /^\+?\d{10,15}$/;
+            return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+        }
+
+        // Обработчик отправки формы
+        tg.MainButton.onClick(async function() {
+            const form = document.getElementById('registrationForm');
+            const name = document.getElementById('name').value.trim();
+            const surname = document.getElementById('surname').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const language = document.getElementById('language').value;
+
+            // Сброс ошибок
+            document.querySelectorAll('.error').forEach(el => el.classList.remove('show'));
+
+            // Валидация
+            let hasErrors = false;
+
+            if (!name) {
+                document.getElementById('errorName').classList.add('show');
+                hasErrors = true;
+            }
+
+            if (!surname) {
+                document.getElementById('errorSurname').classList.add('show');
+                hasErrors = true;
+            }
+
+            if (!phone || !validatePhone(phone)) {
+                document.getElementById('errorPhone').classList.add('show');
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
+
+            // Показать загрузку
+            form.style.display = 'none';
+            document.getElementById('loading').classList.add('show');
+            tg.MainButton.hide();
+
+            // Формирование данных для отправки
+            const registrationData = {
+                telegram_id: user.id,
+                chat_id: initData.chat?.id || user.id,
+                name: name,
+                surname: surname,
+                phone_number: phone,
+                tg_username: user.first_name || '',
+                preferred_language: language,
+                avatar_url: '',
+                init_data: tg.initData
+            };
+
+            // Получение avatar_url
+            // if (user.first_name) {
+            //     registrationData.avatar_url = `https://t.me/i/userpic/320/${user.first_name}.jpg`;
+            // }
+
+            try {
+                // Отправка данных на webhook n8n
+                // URL будет настроен при деплое
+                const webhookUrl = 'https://n8n.vseproi.de/webhook/tcs2-registration';
+                
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(registrationData)
+                });
+
+                if (response.ok) {
+                    // Показать успех
+                    document.getElementById('loading').classList.remove('show');
+                    const successDiv = document.getElementById('success');
+                    successDiv.classList.add('show');
+                    successDiv.querySelector('h2').textContent = t.successTitle;
+                    successDiv.querySelector('p').textContent = t.successMessage;
+                    
+                    tg.HapticFeedback.notificationOccurred('success');
+                    
+                    // Закрыть Web App через 2 секунды
+                    setTimeout(() => {
+                        tg.close();
+                    }, 2000);
+                } else {
+                    throw new Error('Registration failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                tg.HapticFeedback.notificationOccurred('error');
+                tg.showAlert('Ошибка регистрации. Попробуйте позже.');
+                
+                // Вернуться к форме
+                document.getElementById('loading').classList.remove('show');
+                form.style.display = 'block';
+                tg.MainButton.show();
+            }
+        });
+
+        // Обработка закрытия
+        tg.onEvent('backButtonClicked', function() {
+            tg.close();
+        });
+    </script>
+</body>
+</html>

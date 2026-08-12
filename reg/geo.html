@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Фиксация геолокации</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .status {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .error {
+      color: #e53935;
+      font-weight: bold;
+    }
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--tg-theme-button-color, #2481cc);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loader" class="loader"></div>
+  <div id="status" class="status">Определяем точные координаты GPS...</div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); // Разворачиваем на весь экран
+
+    const statusEl = document.getElementById('status');
+    const loaderEl = document.getElementById('loader');
+
+    // Функция отправки данных в Telegram
+    function sendGeoData(latitude, longitude, accuracy) {
+        // Получаем initData из Telegram (содержит безопасные данные о пользователе)
+        const tgData = window.Telegram.WebApp.initDataUnsafe;
+        
+        const payload = {
+            user_id: tgData.user?.id,
+            first_name: tgData.user?.first_name,
+            latitude: latitude,
+            longitude: longitude,
+            accuracy: accuracy,
+            timestamp: new Date().toISOString()
+        };
+
+        // Отправляем данные напрямую на Webhook n8n
+        fetch('https://n8n.vseproi.de/webhook/5f8ef8b4-adad-41ad-ac26-cc35db237729', { // <-- Укажите ваш URL вебхука n8n
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            statusEl.innerText = "✅ Данные успешно переданы!";
+            setTimeout(() => {
+            tg.close(); // Закрываем Mini App
+            }, 500);
+        })
+        .catch((error) => {
+            loaderEl.style.display = 'none';
+            statusEl.innerHTML = "<span class='error'>❌ Ошибка отправки данных на сервер</span>";
+        });
+    }
+
+    // Запрашиваем геолокацию через браузерный API устройства
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // Успешно получили координаты с GPS-чипа
+          statusEl.innerText = "Координаты получены! Передаем в систему...";
+          
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const acc = position.coords.accuracy;
+
+          setTimeout(() => {
+            sendGeoData(lat, lon, acc);
+          }, 800);
+        },
+        (error) => {
+          // Если GPS выключен или пользователь запретил доступ
+          loaderEl.style.display = 'none';
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              statusEl.innerHTML = "<span class='error'>❌ Доступ к геолокации запрещен!</span><br><br>Разрешите боту доступ к геолокации в настройках браузера/телефона.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+            case error.TIMEOUT:
+              statusEl.innerHTML = "<span class='error'>❌ Не удалось получить GPS-сигнал!</span><br><br>Убедитесь, что GPS (Геоданные) включен на смартфоне, и повторите попытку.";
+              break;
+          }
+        },
+        {
+          enableHighAccuracy: true, // Включаем режим максимальной точности (принудительный GPS)
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      loaderEl.style.display = 'none';
+      statusEl.innerHTML = "<span class='error'>Ваш браузер не поддерживает определение геолокации.</span>";
+    }
+  </script>
+</body>
+</html>
