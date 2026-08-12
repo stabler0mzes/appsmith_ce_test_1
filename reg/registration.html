@@ -157,7 +157,7 @@
                 <label for="language" id="labelLanguage">Язык интерфейса</label>
                 <select id="language" name="language">
                     <option value="ru">Русский</option>
-                    <option value="uk">Українська</option>
+                    <option value="ua">Українська</option>
                     <option value="en">English</option>
                 </select>
             </div>
@@ -190,9 +190,9 @@
         const user = initData.user || {};
         
         // Определение языка
-        const userLanguage = user.language_code || 'uk';
-        const supportedLanguages = ['ru', 'uk', 'en'];
-        const currentLanguage = supportedLanguages.includes(userLanguage) ? userLanguage : 'uk';
+        const userLanguage = user.language_code || 'ua';
+        const supportedLanguages = ['ru', 'ua', 'en'];
+        const currentLanguage = supportedLanguages.includes(userLanguage) ? userLanguage : 'ua';
 
         // Словарь переводов
         const translations = {
@@ -215,7 +215,7 @@
                 surnamePlaceholder: 'Введите фамилию',
                 phonePlaceholder: '+380XXXXXXXXX'
             },
-            uk: {
+            ua: {
                 formTitle: 'Реєстрація співробітника',
                 formSubtitle: 'Заповніть форму для реєстрації в системі',
                 labelName: "Ім'я *",
