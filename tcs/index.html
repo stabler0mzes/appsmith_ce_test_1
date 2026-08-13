@@ -20,6 +20,8 @@
         --green-bg: #e7f7f0;
         --orange: #c07a17;
         --orange-bg: #fdf3e3;
+        --red: #b8433a;
+        --red-bg: #fbeceb;
         --radius: 14px;
         --radius-sm: 9px;
         --shadow: 0 1px 2px rgba(20, 20, 25, 0.04), 0 1px 10px rgba(20, 20, 25, 0.04);
@@ -229,6 +231,11 @@
         background: #eeeeef;
     }
     .badge-admin::before { background: var(--text-faint); }
+    .badge-inactive {
+        color: var(--red);
+        background: var(--red-bg);
+    }
+    .badge-inactive::before { background: var(--red); }
 
     .badge-row {
         display: flex;
@@ -535,6 +542,14 @@
         </div>
         <div id="activeContent"></div>
     </div>
+
+    <div class="section">
+        <div class="section-head">
+            <h2>Неактивные сотрудники</h2>
+            <span class="count-pill neutral" id="inactiveCountPill" style="display:none;"></span>
+        </div>
+        <div id="inactiveContent"></div>
+    </div>
 </div>
 
 <!-- Activation modal -->
@@ -693,6 +708,7 @@
     // ==========================================================
     let pendingEmployees = [];
     let activeEmployees = [];
+    let inactiveEmployees = [];
     let hourlyRates = [];
     let activityDirections = [];
     let currentActivateEmployee = null;
@@ -757,16 +773,19 @@
 
             pendingEmployees = data.employees || [];
             activeEmployees = data.active_employees || [];
+            inactiveEmployees = data.inactive_employees || [];
             hourlyRates = data.hourly_rates || [];
             activityDirections = data.activity_directions || [];
 
             renderPending();
             renderActive();
+            renderInactive();
         } catch (e) {
             console.error(e);
             showError('Не удалось загрузить список сотрудников. Попробуйте обновить страницу.');
             document.getElementById('pendingContent').innerHTML = '';
             document.getElementById('activeContent').innerHTML = '';
+            document.getElementById('inactiveContent').innerHTML = '';
         } finally {
             btn.disabled = false;
             btn.classList.remove('spinning');
@@ -868,6 +887,60 @@
                 </div>
                 <div class="badge-row">
                     <span class="badge badge-active">Активен</span>
+                    ${emp.is_admin ? '<span class="badge badge-admin">Администратор</span>' : ''}
+                </div>
+                <div class="card-meta">
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Телефон</span>
+                        <span class="card-meta-value">${escapeHtml(emp.phone_number || '—')}</span>
+                    </div>
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Ставка</span>
+                        <span class="card-meta-value">${escapeHtml(rateLabel(emp.workhour_price_id))}</span>
+                    </div>
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Направление</span>
+                        <span class="card-meta-value">${escapeHtml(directionLabel(emp.activity_direction_id))}</span>
+                    </div>
+                </div>
+                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">Редактировать</button>
+            </div>`;
+    }
+
+    // ==========================================================
+    // Inactive employees
+    // ==========================================================
+    function renderInactive() {
+        const countPill = document.getElementById('inactiveCountPill');
+        if (inactiveEmployees.length > 0) {
+            countPill.style.display = 'inline-flex';
+            countPill.textContent = inactiveEmployees.length;
+        } else {
+            countPill.style.display = 'none';
+        }
+
+        const content = document.getElementById('inactiveContent');
+
+        if (inactiveEmployees.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет неактивных сотрудников');
+            return;
+        }
+
+        content.innerHTML = `<div class="grid">${inactiveEmployees.map(inactiveCardHtml).join('')}</div>`;
+    }
+
+    function inactiveCardHtml(emp) {
+        return `
+            <div class="card">
+                <div class="card-head">
+                    ${avatarHtml(emp, 'avatar')}
+                    <div class="card-head-text">
+                        <div class="card-name">${escapeHtml(emp.full_name || (emp.name + ' ' + emp.surname))}</div>
+                        <div class="card-username">${escapeHtml(emp.position || '—')}</div>
+                    </div>
+                </div>
+                <div class="badge-row">
+                    <span class="badge badge-inactive">Неактивен</span>
                     ${emp.is_admin ? '<span class="badge badge-admin">Администратор</span>' : ''}
                 </div>
                 <div class="card-meta">
@@ -992,7 +1065,7 @@
     // Edit modal
     // ==========================================================
     function openEditModal(employeeId) {
-        currentEditEmployee = activeEmployees.find(e => e.id === employeeId);
+        currentEditEmployee = activeEmployees.find(e => e.id === employeeId) || inactiveEmployees.find(e => e.id === employeeId);
         if (!currentEditEmployee) return;
         const emp = currentEditEmployee;
 
