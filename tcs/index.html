@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Сотрудники</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -509,6 +511,66 @@
     }
     .modal-success .title { font-size: 15px; font-weight: 650; margin-bottom: 4px; }
     .modal-success .sub { font-size: 12.5px; color: var(--text-muted); }
+
+    /* Section action button (Add object) */
+    .section-head-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+    }
+    .add-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 9px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+    }
+    .add-btn:hover { opacity: 0.85; }
+    .add-btn svg { width: 14px; height: 14px; }
+
+    .action-row {
+        display: flex;
+        gap: 8px;
+    }
+    .action-row .action-btn { flex: 1; margin-top: 0; }
+
+    /* Project modal */
+    #projectOverlay .modal { max-width: 560px; }
+
+    .map-container {
+        height: 260px;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        margin-bottom: 8px;
+    }
+    .map-coords {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 16px;
+    }
+    .map-hint {
+        font-size: 11.5px;
+        color: var(--text-faint);
+        margin-bottom: 8px;
+    }
+
+    .policy-group-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text-faint);
+        margin: 4px 0 2px;
+    }
 </style>
 </head>
 <body>
@@ -549,6 +611,20 @@
             <span class="count-pill neutral" id="inactiveCountPill" style="display:none;"></span>
         </div>
         <div id="inactiveContent"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-head-row">
+            <div class="section-head" style="margin-bottom:0;">
+                <h2>Объекты</h2>
+                <span class="count-pill neutral" id="projectsCountPill" style="display:none;"></span>
+            </div>
+            <button class="add-btn" onclick="openProjectModal(null)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+                Добавить объект
+            </button>
+        </div>
+        <div id="projectsContent"></div>
     </div>
 </div>
 
@@ -695,6 +771,109 @@
     </div>
 </div>
 
+<!-- Project modal -->
+<div class="overlay" id="projectOverlay">
+    <div class="modal">
+        <div id="projectForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="projectTitle">Новый объект</div>
+                    <div class="modal-subtitle">Данные объекта и геопозиция</div>
+                </div>
+                <div class="modal-header-active">
+                    <span class="toggle-label">Активен</span>
+                    <label class="switch">
+                        <input type="checkbox" id="projectIsActive" checked>
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="projectName">Название объекта <span class="req">*</span></label>
+                    <input type="text" id="projectName" placeholder="Например, ЖК Оазис" oninput="validateProjectForm()">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectAddress">Адрес <span class="opt">(необязательно)</span></label>
+                    <input type="text" id="projectAddress" placeholder="ул. Примерная, 1">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectDescription">Описание <span class="opt">(необязательно)</span></label>
+                    <textarea id="projectDescription" placeholder="Дополнительная информация об объекте"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Геопозиция <span class="opt">(необязательно)</span></label>
+                    <div class="map-hint">Кликните по карте или перетащите маркер, чтобы установить точку объекта</div>
+                    <div class="map-container" id="projectMap"></div>
+                    <div class="map-coords" id="projectCoords">Координаты не заданы</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectRadius">Радиус геозоны, м <span class="req">*</span></label>
+                    <input type="text" id="projectRadius" placeholder="300" oninput="validateProjectForm()">
+                </div>
+
+                <div class="policy-group-title">При начале смены</div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Требовать GPS</div>
+                        <div class="toggle-sub">Подтверждение геопозиции при старте работы</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="projectRequireGps">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Требовать фото</div>
+                        <div class="toggle-sub">Фото/видео отчёт при старте работы</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="projectRequirePhoto">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+
+                <div class="policy-group-title">При завершении смены</div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Требовать GPS</div>
+                        <div class="toggle-sub">Подтверждение геопозиции при завершении работы</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="projectRequestGps">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Требовать фото</div>
+                        <div class="toggle-sub">Фото/видео отчёт при завершении работы</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="projectRequestMedia">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-error" id="projectError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeProjectModal()">Отмена</button>
+                <button class="btn btn-save" id="projectSaveBtn" disabled onclick="submitProject()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="projectSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Объект сохранён</div>
+            <div class="sub" id="projectSuccessSub"></div>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================================
     // Config
@@ -702,6 +881,9 @@
     const QUEUE_URL = 'https://n8n.vseproi.de/webhook/tcs2-activation-queue';
     const SAVE_ACTIVATION_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-activation';
     const UPDATE_EMPLOYEE_URL = 'https://n8n.vseproi.de/webhook/tcs2-update-employee';
+    const GET_PROJECTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-projects';
+    const SAVE_PROJECT_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-project';
+    const DEFAULT_MAP_CENTER = [50.4501, 30.5234]; // Киев
 
     // ==========================================================
     // State
@@ -709,10 +891,14 @@
     let pendingEmployees = [];
     let activeEmployees = [];
     let inactiveEmployees = [];
+    let projects = [];
     let hourlyRates = [];
     let activityDirections = [];
     let currentActivateEmployee = null;
     let currentEditEmployee = null;
+    let currentProject = null;
+    let projectMap = null;
+    let projectMarker = null;
     let saving = false;
 
     // ==========================================================
@@ -766,26 +952,37 @@
         hideError();
 
         try {
-            const res = await fetch(QUEUE_URL, { method: 'GET' });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            const data = await res.json();
+            const [queueRes, projectsRes] = await Promise.all([
+                fetch(QUEUE_URL, { method: 'GET' }),
+                fetch(GET_PROJECTS_URL, { method: 'GET' })
+            ]);
+            if (!queueRes.ok) throw new Error('HTTP ' + queueRes.status);
+            if (!projectsRes.ok) throw new Error('HTTP ' + projectsRes.status);
+
+            const data = await queueRes.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            const projectsData = await projectsRes.json();
+            if (!projectsData.success) throw new Error(projectsData.error || 'Ошибка загрузки объектов');
 
             pendingEmployees = data.employees || [];
             activeEmployees = data.active_employees || [];
             inactiveEmployees = data.inactive_employees || [];
             hourlyRates = data.hourly_rates || [];
             activityDirections = data.activity_directions || [];
+            projects = projectsData.projects || [];
 
             renderPending();
             renderActive();
             renderInactive();
+            renderProjects();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить список сотрудников. Попробуйте обновить страницу.');
+            showError('Не удалось загрузить данные. Попробуйте обновить страницу.');
             document.getElementById('pendingContent').innerHTML = '';
             document.getElementById('activeContent').innerHTML = '';
             document.getElementById('inactiveContent').innerHTML = '';
+            document.getElementById('projectsContent').innerHTML = '';
         } finally {
             btn.disabled = false;
             btn.classList.remove('spinning');
@@ -959,6 +1156,236 @@
                 </div>
                 <button class="action-btn secondary" onclick="openEditModal(${emp.id})">Редактировать</button>
             </div>`;
+    }
+
+    // ==========================================================
+    // Projects
+    // ==========================================================
+    function renderProjects() {
+        const countPill = document.getElementById('projectsCountPill');
+        if (projects.length > 0) {
+            countPill.style.display = 'inline-flex';
+            countPill.textContent = projects.length;
+        } else {
+            countPill.style.display = 'none';
+        }
+
+        const content = document.getElementById('projectsContent');
+
+        if (projects.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет объектов. Добавьте первый через кнопку выше.');
+            return;
+        }
+
+        content.innerHTML = `<div class="grid">${projects.map(projectCardHtml).join('')}</div>`;
+    }
+
+    function projectCardHtml(p) {
+        const hasCoords = p.gps_latitude != null && p.gps_longitude != null;
+        return `
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-head-text">
+                        <div class="card-name">${escapeHtml(p.project_name)}</div>
+                        <div class="card-username">${escapeHtml(p.project_address || (hasCoords ? 'Координаты заданы' : 'Адрес не указан'))}</div>
+                    </div>
+                </div>
+                <div class="badge-row">
+                    <span class="badge ${p.is_active ? 'badge-active' : 'badge-inactive'}">${p.is_active ? 'Активен' : 'Неактивен'}</span>
+                    ${p.require_gps_coordinates ? '<span class="badge badge-admin">GPS в начале</span>' : ''}
+                    ${p.require_photo_report ? '<span class="badge badge-admin">Фото в начале</span>' : ''}
+                    ${p.request_gps ? '<span class="badge badge-admin">GPS в конце</span>' : ''}
+                    ${p.request_media ? '<span class="badge badge-admin">Фото в конце</span>' : ''}
+                </div>
+                <div class="card-meta">
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Радиус</span>
+                        <span class="card-meta-value">${p.project_radius ?? 300} м</span>
+                    </div>
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Координаты</span>
+                        <span class="card-meta-value">${hasCoords ? Number(p.gps_latitude).toFixed(5) + ', ' + Number(p.gps_longitude).toFixed(5) : '—'}</span>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="action-btn secondary" onclick="openProjectModal(${p.id})">Редактировать</button>
+                    ${p.is_active
+                        ? `<button class="action-btn secondary" onclick="toggleProjectActive(${p.id}, false)">Удалить</button>`
+                        : `<button class="action-btn secondary" onclick="toggleProjectActive(${p.id}, true)">Восстановить</button>`}
+                </div>
+            </div>`;
+    }
+
+    function initProjectMap() {
+        if (projectMap) return;
+        projectMap = L.map('projectMap').setView(DEFAULT_MAP_CENTER, 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(projectMap);
+
+        projectMarker = L.marker(DEFAULT_MAP_CENTER, { draggable: true }).addTo(projectMap);
+        projectMarker.on('dragend', () => updateProjectCoords(projectMarker.getLatLng()));
+        projectMap.on('click', (e) => {
+            projectMarker.setLatLng(e.latlng);
+            updateProjectCoords(e.latlng);
+        });
+    }
+
+    function updateProjectCoords(latlng) {
+        document.getElementById('projectCoords').textContent =
+            `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+        document.getElementById('projectCoords').dataset.lat = latlng.lat;
+        document.getElementById('projectCoords').dataset.lng = latlng.lng;
+    }
+
+    function openProjectModal(projectId) {
+        currentProject = projectId ? projects.find(p => p.id === projectId) : null;
+
+        document.getElementById('projectTitle').textContent = currentProject ? currentProject.project_name : 'Новый объект';
+        document.getElementById('projectName').value = currentProject?.project_name || '';
+        document.getElementById('projectAddress').value = currentProject?.project_address || '';
+        document.getElementById('projectDescription').value = currentProject?.project_description || '';
+        document.getElementById('projectRadius').value = currentProject?.project_radius ?? 300;
+        document.getElementById('projectIsActive').checked = currentProject ? !!currentProject.is_active : true;
+        document.getElementById('projectRequireGps').checked = !!currentProject?.require_gps_coordinates;
+        document.getElementById('projectRequirePhoto').checked = !!currentProject?.require_photo_report;
+        document.getElementById('projectRequestGps').checked = !!currentProject?.request_gps;
+        document.getElementById('projectRequestMedia').checked = !!currentProject?.request_media;
+
+        document.getElementById('projectError').classList.remove('show');
+        document.getElementById('projectForm').style.display = 'block';
+        document.getElementById('projectSuccess').classList.remove('show');
+
+        validateProjectForm();
+        document.getElementById('projectOverlay').classList.add('show');
+
+        setTimeout(() => {
+            initProjectMap();
+            const hasCoords = currentProject?.gps_latitude != null && currentProject?.gps_longitude != null;
+            const center = hasCoords
+                ? [Number(currentProject.gps_latitude), Number(currentProject.gps_longitude)]
+                : DEFAULT_MAP_CENTER;
+            projectMap.invalidateSize();
+            projectMap.setView(center, hasCoords ? 15 : 12);
+            projectMarker.setLatLng(center);
+            if (hasCoords) {
+                updateProjectCoords({ lat: center[0], lng: center[1] });
+            } else {
+                document.getElementById('projectCoords').textContent = 'Координаты не заданы';
+                delete document.getElementById('projectCoords').dataset.lat;
+                delete document.getElementById('projectCoords').dataset.lng;
+            }
+        }, 50);
+    }
+
+    function closeProjectModal() {
+        if (saving) return;
+        document.getElementById('projectOverlay').classList.remove('show');
+        currentProject = null;
+    }
+
+    function validateProjectForm() {
+        const name = document.getElementById('projectName').value.trim();
+        const radius = document.getElementById('projectRadius').value.trim();
+        const radiusValid = radius !== '' && Number(radius) > 0;
+        document.getElementById('projectSaveBtn').disabled = !(name && radiusValid);
+    }
+
+    async function submitProject() {
+        if (saving) return;
+
+        const coordsEl = document.getElementById('projectCoords');
+        const lat = coordsEl.dataset.lat ? Number(coordsEl.dataset.lat) : null;
+        const lng = coordsEl.dataset.lng ? Number(coordsEl.dataset.lng) : null;
+
+        const payload = {
+            project_id: currentProject?.id || null,
+            reporting_policy_id: currentProject?.reporting_policy_id || null,
+            project_name: document.getElementById('projectName').value.trim(),
+            project_description: document.getElementById('projectDescription').value.trim() || null,
+            project_address: document.getElementById('projectAddress').value.trim() || null,
+            gps_latitude: lat,
+            gps_longitude: lng,
+            project_radius: Number(document.getElementById('projectRadius').value),
+            is_active: document.getElementById('projectIsActive').checked,
+            request_media: document.getElementById('projectRequestMedia').checked,
+            request_gps: document.getElementById('projectRequestGps').checked,
+            require_gps_coordinates: document.getElementById('projectRequireGps').checked,
+            require_photo_report: document.getElementById('projectRequirePhoto').checked
+        };
+
+        const errorBox = document.getElementById('projectError');
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById('projectSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+
+        try {
+            const res = await fetch(SAVE_PROJECT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить объект');
+
+            document.getElementById('projectForm').style.display = 'none';
+            document.getElementById('projectSuccessSub').textContent = data.project_name;
+            document.getElementById('projectSuccess').classList.add('show');
+
+            setTimeout(() => { closeProjectModal(); loadData(); }, 1400);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            validateProjectForm();
+        }
+    }
+
+    async function toggleProjectActive(projectId, makeActive) {
+        const project = projects.find(p => p.id === projectId);
+        if (!project) return;
+
+        const confirmMsg = makeActive
+            ? `Восстановить объект «${project.project_name}»?`
+            : `Удалить объект «${project.project_name}»? Он станет недоступен сотрудникам для выбора.`;
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            const res = await fetch(SAVE_PROJECT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    project_id: project.id,
+                    reporting_policy_id: project.reporting_policy_id || null,
+                    project_name: project.project_name,
+                    project_description: project.project_description || null,
+                    project_address: project.project_address || null,
+                    gps_latitude: project.gps_latitude,
+                    gps_longitude: project.gps_longitude,
+                    project_radius: project.project_radius,
+                    is_active: makeActive,
+                    request_media: project.request_media,
+                    request_gps: project.request_gps,
+                    require_gps_coordinates: project.require_gps_coordinates,
+                    require_photo_report: project.require_photo_report
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось изменить объект');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            showError('Не удалось изменить статус объекта. Попробуйте ещё раз.');
+        }
     }
 
     // ==========================================================
@@ -1183,8 +1610,11 @@
     document.getElementById('editOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'editOverlay') closeEditModal();
     });
+    document.getElementById('projectOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'projectOverlay') closeProjectModal();
+    });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeActivateModal(); closeEditModal(); }
+        if (e.key === 'Escape') { closeActivateModal(); closeEditModal(); closeProjectModal(); }
     });
 
     // ==========================================================
