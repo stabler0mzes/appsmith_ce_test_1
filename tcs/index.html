@@ -543,7 +543,12 @@
     .action-row .action-btn { flex: 1; margin-top: 0; }
 
     /* Project modal */
-    #projectOverlay .modal { max-width: 560px; }
+    /* Project modal: same principle as edit modal — parent overlay scrolls, not the modal itself */
+    #projectOverlay .modal {
+        max-width: 560px;
+        max-height: none;
+        overflow-y: visible;
+    }
 
     .map-container {
         height: 260px;
