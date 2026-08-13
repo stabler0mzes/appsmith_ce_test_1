@@ -1,5 +1,690 @@
-<html>
-	<body>
-		<h1>TCS TEST</h1>
-	</body>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Активация сотрудников</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+        --bg: #e9e9ea;
+        --card-bg: #ffffff;
+        --border: #e4e4e6;
+        --text: #17181a;
+        --text-muted: #8b8d94;
+        --text-faint: #b4b6bc;
+        --accent: #17181a;
+        --accent-text: #ffffff;
+        --green: #1fa26e;
+        --green-bg: #e7f7f0;
+        --orange: #c07a17;
+        --orange-bg: #fdf3e3;
+        --radius: 14px;
+        --radius-sm: 9px;
+        --shadow: 0 1px 2px rgba(20, 20, 25, 0.04), 0 1px 10px rgba(20, 20, 25, 0.04);
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 32px 20px 80px;
+    }
+
+    .page {
+        max-width: 1080px;
+        margin: 0 auto;
+    }
+
+    .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 28px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+        font-size: 22px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+    }
+
+    .topbar p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .refresh-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 9px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        cursor: pointer;
+        box-shadow: var(--shadow);
+        transition: background 0.15s;
+    }
+    .refresh-btn:hover { background: #f5f5f6; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
+    .refresh-btn svg { width: 14px; height: 14px; }
+    .refresh-btn.spinning svg { animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .count-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--orange-bg);
+        color: var(--orange);
+        font-size: 11px;
+        font-weight: 700;
+        margin-left: 8px;
+    }
+
+    /* Grid of employee cards */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+    }
+
+    .card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .card-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #f0f0f2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        font-weight: 650;
+        color: var(--text-muted);
+        flex-shrink: 0;
+    }
+
+    .card-head-text { min-width: 0; }
+
+    .card-name {
+        font-size: 14.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .card-username {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        margin-top: 1px;
+    }
+
+    .card-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+    }
+
+    .card-meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .card-meta-label {
+        text-transform: uppercase;
+        font-size: 10.5px;
+        letter-spacing: 0.03em;
+        color: var(--text-faint);
+    }
+
+    .card-meta-value {
+        color: var(--text);
+        font-weight: 500;
+        text-align: right;
+    }
+
+    .badge-pending {
+        display: inline-flex;
+        align-self: flex-start;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--orange);
+        background: var(--orange-bg);
+        border-radius: 999px;
+        padding: 3px 9px 3px 7px;
+    }
+    .badge-pending::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--orange);
+    }
+
+    .activate-btn {
+        margin-top: 2px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+    }
+    .activate-btn:hover { opacity: 0.85; }
+
+    /* Empty / loading / error states */
+    .state-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 48px 20px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13.5px;
+    }
+    .state-box .state-icon { font-size: 28px; margin-bottom: 10px; }
+
+    .error-box {
+        background: #fdecec;
+        border: 1px solid #f6c6c6;
+        color: #a3312f;
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    /* Modal */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 20, 25, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 50;
+    }
+    .overlay.show { display: flex; }
+
+    .modal {
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        width: 100%;
+        max-width: 420px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.18);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 20px 16px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title { font-size: 15.5px; font-weight: 650; }
+    .modal-subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+    .modal-body { padding: 18px 20px 4px; }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--text);
+    }
+
+    label .req { color: #c0392b; }
+
+    input[type="text"], select {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #fafafb;
+        color: var(--text);
+        font-family: inherit;
+        appearance: none;
+    }
+    select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b8d94' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 30px;
+    }
+    input[type="text"]:focus, select:focus {
+        outline: none;
+        border-color: #b7b8bf;
+        background: #ffffff;
+    }
+
+    .readonly-info {
+        background: #f5f5f6;
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        font-size: 12.5px;
+        color: var(--text-muted);
+        margin-bottom: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .readonly-info b { color: var(--text); font-weight: 600; }
+
+    .modal-footer {
+        display: flex;
+        gap: 10px;
+        padding: 16px 20px 20px;
+    }
+
+    .btn {
+        flex: 1;
+        padding: 11px;
+        border-radius: var(--radius-sm);
+        font-size: 13.5px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.15s, background 0.15s;
+    }
+    .btn-cancel {
+        background: #f0f0f2;
+        color: var(--text);
+    }
+    .btn-cancel:hover { background: #e6e6e8; }
+    .btn-save {
+        background: var(--accent);
+        color: var(--accent-text);
+    }
+    .btn-save:disabled {
+        opacity: 0.35;
+        cursor: default;
+    }
+    .btn-save:not(:disabled):hover { opacity: 0.85; }
+
+    .modal-error {
+        display: none;
+        margin: 0 20px 14px;
+        background: #fdecec;
+        border: 1px solid #f6c6c6;
+        color: #a3312f;
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        font-size: 12.5px;
+    }
+    .modal-error.show { display: block; }
+
+    .modal-success {
+        padding: 40px 24px;
+        text-align: center;
+        display: none;
+    }
+    .modal-success.show { display: block; }
+    .modal-success .icon { font-size: 40px; margin-bottom: 12px; }
+    .modal-success .title { font-size: 15px; font-weight: 650; margin-bottom: 4px; }
+    .modal-success .sub { font-size: 12.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="page">
+    <div class="topbar">
+        <div>
+            <h1>Активация сотрудников<span class="count-pill" id="countPill" style="display:none;"></span></h1>
+            <p>Сотрудники, ожидающие заполнения обязательных полей</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadQueue()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+            Обновить
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+    <div id="content"></div>
+</div>
+
+<div class="overlay" id="overlay">
+    <div class="modal">
+        <div id="modalForm">
+            <div class="modal-header">
+                <div class="avatar" id="modalAvatar"></div>
+                <div>
+                    <div class="modal-title" id="modalTitle">Активация сотрудника</div>
+                    <div class="modal-subtitle">Заполните обязательные поля</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="readonly-info" id="modalReadonlyInfo"></div>
+
+                <div class="form-group">
+                    <label for="fieldPosition">Должность <span class="req">*</span></label>
+                    <input type="text" id="fieldPosition" placeholder="Например, Каменщик" oninput="validateForm()">
+                </div>
+
+                <div class="form-group">
+                    <label for="fieldRate">Ставка <span class="req">*</span></label>
+                    <select id="fieldRate" onchange="validateForm()">
+                        <option value="">Выберите ставку</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fieldDirection">Направление деятельности <span class="req">*</span></label>
+                    <select id="fieldDirection" onchange="validateForm()">
+                        <option value="">Выберите направление</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-error" id="modalError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeModal()">Отмена</button>
+                <button class="btn btn-save" id="saveBtn" disabled onclick="submitActivation()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="modalSuccess">
+            <div class="icon">✅</div>
+            <div class="title">Сотрудник активирован</div>
+            <div class="sub" id="modalSuccessSub"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const QUEUE_URL = 'https://n8n.vseproi.de/webhook/tcs2-activation-queue';
+    const SAVE_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-activation';
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let employees = [];
+    let hourlyRates = [];
+    let activityDirections = [];
+    let currentEmployee = null;
+    let saving = false;
+
+    // ==========================================================
+    // Helpers
+    // ==========================================================
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str ?? '';
+        return div.innerHTML;
+    }
+
+    function initials(emp) {
+        const n = (emp.name || '').trim();
+        const s = (emp.surname || '').trim();
+        return ((n[0] || '') + (s[0] || '')).toUpperCase() || '?';
+    }
+
+    function formatDate(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function showError(msg) {
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = 'block';
+    }
+
+    function hideError() {
+        document.getElementById('errorBox').style.display = 'none';
+    }
+
+    // ==========================================================
+    // Load queue
+    // ==========================================================
+    async function loadQueue() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const res = await fetch(QUEUE_URL, { method: 'GET' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            employees = data.employees || [];
+            hourlyRates = data.hourly_rates || [];
+            activityDirections = data.activity_directions || [];
+
+            renderQueue();
+        } catch (e) {
+            console.error(e);
+            showError('Не удалось загрузить список сотрудников. Попробуйте обновить страницу.');
+            document.getElementById('content').innerHTML = '';
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    function renderQueue() {
+        const countPill = document.getElementById('countPill');
+        if (employees.length > 0) {
+            countPill.style.display = 'inline-flex';
+            countPill.textContent = employees.length;
+        } else {
+            countPill.style.display = 'none';
+        }
+
+        const content = document.getElementById('content');
+
+        if (employees.length === 0) {
+            content.innerHTML = `
+                <div class="state-box">
+                    <div class="state-icon">🎉</div>
+                    Нет сотрудников, ожидающих активации
+                </div>`;
+            return;
+        }
+
+        content.innerHTML = `<div class="grid">${employees.map(cardHtml).join('')}</div>`;
+    }
+
+    function cardHtml(emp) {
+        const avatar = emp.avatar_url
+            ? `<img class="avatar" src="${escapeHtml(emp.avatar_url)}" alt="">`
+            : `<div class="avatar">${escapeHtml(initials(emp))}</div>`;
+
+        return `
+            <div class="card">
+                <div class="card-head">
+                    ${avatar}
+                    <div class="card-head-text">
+                        <div class="card-name">${escapeHtml(emp.full_name || (emp.name + ' ' + emp.surname))}</div>
+                        <div class="card-username">${emp.tg_username ? '@' + escapeHtml(emp.tg_username) : escapeHtml(emp.phone_number || '')}</div>
+                    </div>
+                </div>
+                <span class="badge-pending">Ожидает активации</span>
+                <div class="card-meta">
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Телефон</span>
+                        <span class="card-meta-value">${escapeHtml(emp.phone_number || '—')}</span>
+                    </div>
+                    <div class="card-meta-row">
+                        <span class="card-meta-label">Регистрация</span>
+                        <span class="card-meta-value">${formatDate(emp.created_at)}</span>
+                    </div>
+                </div>
+                <button class="activate-btn" onclick="openModal(${emp.id})">Активировать</button>
+            </div>`;
+    }
+
+    // ==========================================================
+    // Modal
+    // ==========================================================
+    function openModal(employeeId) {
+        currentEmployee = employees.find(e => e.id === employeeId);
+        if (!currentEmployee) return;
+
+        document.getElementById('modalAvatar').textContent = initials(currentEmployee);
+        document.getElementById('modalTitle').textContent = currentEmployee.full_name || (currentEmployee.name + ' ' + currentEmployee.surname);
+        document.getElementById('modalReadonlyInfo').innerHTML = `
+            <div><b>Телефон:</b> ${escapeHtml(currentEmployee.phone_number || '—')}</div>
+            <div><b>Telegram:</b> ${currentEmployee.tg_username ? '@' + escapeHtml(currentEmployee.tg_username) : '—'}</div>
+        `;
+
+        // Populate rate select
+        const rateSelect = document.getElementById('fieldRate');
+        rateSelect.innerHTML = '<option value="">Выберите ставку</option>' + hourlyRates.map(r =>
+            `<option value="${r.id}">${r.price_per_hour} грн/час — ${escapeHtml(r.position_name || '')}</option>`
+        ).join('');
+
+        // Populate direction select
+        const dirSelect = document.getElementById('fieldDirection');
+        dirSelect.innerHTML = '<option value="">Выберите направление</option>' + activityDirections.map(d =>
+            `<option value="${d.id}">${escapeHtml(d.direction_name)}</option>`
+        ).join('');
+
+        // Pre-fill if employee already has partial data
+        document.getElementById('fieldPosition').value = (currentEmployee.position && currentEmployee.position !== 'WAITING_FOR_ACTIVATE') ? currentEmployee.position : '';
+        if (currentEmployee.workhour_price_id) rateSelect.value = currentEmployee.workhour_price_id;
+        if (currentEmployee.activity_direction_id) dirSelect.value = currentEmployee.activity_direction_id;
+
+        document.getElementById('modalError').classList.remove('show');
+        document.getElementById('modalForm').style.display = 'block';
+        document.getElementById('modalSuccess').classList.remove('show');
+
+        validateForm();
+        document.getElementById('overlay').classList.add('show');
+    }
+
+    function closeModal() {
+        if (saving) return;
+        document.getElementById('overlay').classList.remove('show');
+        currentEmployee = null;
+    }
+
+    document.getElementById('overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'overlay') closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    function validateForm() {
+        const position = document.getElementById('fieldPosition').value.trim();
+        const rate = document.getElementById('fieldRate').value;
+        const direction = document.getElementById('fieldDirection').value;
+        document.getElementById('saveBtn').disabled = !(position && rate && direction);
+    }
+
+    async function submitActivation() {
+        if (!currentEmployee || saving) return;
+
+        const position = document.getElementById('fieldPosition').value.trim();
+        const workhourPriceId = document.getElementById('fieldRate').value;
+        const activityDirectionId = document.getElementById('fieldDirection').value;
+
+        const errorBox = document.getElementById('modalError');
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+
+        try {
+            const res = await fetch(SAVE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    employee_id: currentEmployee.id,
+                    position: position,
+                    workhour_price_id: Number(workhourPriceId),
+                    activity_direction_id: Number(activityDirectionId)
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Не удалось сохранить данные');
+            }
+
+            // Success — remove employee from local list and show confirmation
+            employees = employees.filter(e => e.id !== currentEmployee.id);
+            renderQueue();
+
+            document.getElementById('modalForm').style.display = 'none';
+            document.getElementById('modalSuccessSub').textContent = data.employee_name + ' теперь может начать работу';
+            document.getElementById('modalSuccess').classList.add('show');
+
+            setTimeout(closeModal, 1600);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            validateForm();
+        }
+    }
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    loadQueue();
+</script>
+
+</body>
 </html>
