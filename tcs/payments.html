@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Оплата</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+</head>
+<body>
+
+<div class="page">
+    <nav class="top-nav" id="topNav"></nav>
+
+    <div class="topbar">
+        <div>
+            <h1>Оплата</h1>
+            <p>Начисление и подтверждение оплаты отработанных часов через Telegram</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+            Обновить
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="section">
+        <div class="section-head">
+            <h2>Сотрудники с задолженностью</h2>
+            <span class="count-pill neutral" id="employeesCountPill" style="display:none;"></span>
+        </div>
+        <div id="employeesContent"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-head">
+            <h2>История транзакций</h2>
+            <span class="count-pill neutral" id="transactionsCountPill" style="display:none;"></span>
+        </div>
+        <div id="transactionsContent"></div>
+    </div>
+</div>
+
+<!-- New transaction modal -->
+<div class="overlay" id="txOverlay">
+    <div class="modal">
+        <div id="txForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Новая транзакция</div>
+                    <div class="modal-subtitle" id="txEmployeeName"></div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Смены к оплате</label>
+                    <div class="session-picker-list" id="txSessionList"></div>
+                    <div class="session-picker-total" id="txSelectedSummary"></div>
+                </div>
+                <div class="form-group">
+                    <label for="txAmount">Сумма к оплате, грн <span class="req">*</span></label>
+                    <input type="text" id="txAmount" placeholder="0" oninput="validateTxForm()">
+                </div>
+            </div>
+            <div class="modal-error" id="txError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeTxModal()">Отмена</button>
+                <button class="btn btn-save" id="txSaveBtn" disabled onclick="submitTx()">Отправить в Telegram</button>
+            </div>
+        </div>
+        <div class="modal-success" id="txSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Отправлено</div>
+            <div class="sub">Сотрудник получит уведомление в Telegram с кнопкой «Получил»</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const GET_PAYMENT_DATA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-payment-data';
+    const GET_UNPAID_SESSIONS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-unpaid-sessions';
+    const CREATE_TRANSACTION_URL = 'https://n8n.vseproi.de/webhook/tcs2-create-transaction';
+    const CANCEL_TRANSACTION_URL = 'https://n8n.vseproi.de/webhook/tcs2-cancel-transaction';
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let employees = [];
+    let transactions = [];
+    let summary = { total_available: 0, total_pending: 0 };
+    let txEmployee = null;
+    let txSessions = [];
+    let txAmountManuallyEdited = false;
+    let saving = false;
+
+    // ==========================================================
+    // Load data
+    // ==========================================================
+    async function loadData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const res = await fetch(GET_PAYMENT_DATA_URL, { method: 'GET' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            employees = data.employees || [];
+            transactions = data.transactions || [];
+            summary = data.summary || { total_available: 0, total_pending: 0 };
+
+            renderStats();
+            renderEmployees();
+            renderTransactions();
+        } catch (e) {
+            console.error(e);
+            showError('Не удалось загрузить данные. Попробуйте обновить страницу.');
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    function money(n) {
+        return Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' грн';
+    }
+
+    // ==========================================================
+    // Stats
+    // ==========================================================
+    function renderStats() {
+        document.getElementById('statsRow').innerHTML = `
+            <div class="stat-card unpaid">
+                <div class="stat-label">Доступно к оплате</div>
+                <div class="stat-value">${money(summary.total_available)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ожидает подтверждения</div>
+                <div class="stat-value">${money(summary.total_pending)}</div>
+            </div>
+        `;
+    }
+
+    // ==========================================================
+    // Employees with balance
+    // ==========================================================
+    function renderEmployees() {
+        const pill = document.getElementById('employeesCountPill');
+        pill.style.display = employees.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = employees.length;
+
+        const content = document.getElementById('employeesContent');
+        if (employees.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет сотрудников с неоплаченными сменами');
+            return;
+        }
+        content.innerHTML = `<div class="grid">${employees.map(e => `
+            <div class="card">
+                <div class="card-head">
+                    ${avatarHtml(e, 'avatar')}
+                    <div class="card-head-text">
+                        <div class="card-name">${escapeHtml(e.full_name)}</div>
+                        <div class="card-username">${e.unpaid_count} ${pluralSessions(e.unpaid_count)}</div>
+                    </div>
+                </div>
+                <div class="balance-amount">${money(e.unpaid_amount)}</div>
+                <button class="action-btn" onclick="openTxModal(${e.id})">Создать транзакцию</button>
+            </div>`).join('')}</div>`;
+    }
+
+    function pluralSessions(n) {
+        const mod10 = n % 10, mod100 = n % 100;
+        if (mod10 === 1 && mod100 !== 11) return 'смена';
+        if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'смены';
+        return 'смен';
+    }
+
+    // ==========================================================
+    // Transaction history
+    // ==========================================================
+    function statusBadge(status) {
+        if (status === 'pending') return '<span class="badge badge-pending">Не проведена</span>';
+        if (status === 'confirmed') return '<span class="badge badge-active">Проведена</span>';
+        return '<span class="badge badge-inactive">Отменена</span>';
+    }
+
+    function renderTransactions() {
+        const pill = document.getElementById('transactionsCountPill');
+        pill.style.display = transactions.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = transactions.length;
+
+        const content = document.getElementById('transactionsContent');
+        if (transactions.length === 0) {
+            content.innerHTML = emptyStateHtml('Транзакций пока нет');
+            return;
+        }
+        content.innerHTML = `<div class="ref-list">${transactions.map(t => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${escapeHtml(t.full_name)} — ${money(t.amount)}
+                        ${statusBadge(t.status)}
+                    </div>
+                    <div class="tx-item-dates">
+                        Создана: ${t.created_at}
+                        ${t.confirmed_at ? ' · Подтверждена: ' + t.confirmed_at : ''}
+                        ${t.cancelled_at ? ' · Отменена: ' + t.cancelled_at : ''}
+                    </div>
+                </div>
+                <div class="ref-item-actions">
+                    ${t.status === 'pending' ? `<button class="action-btn secondary" onclick="cancelTx(${t.id})">Отменить</button>` : ''}
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    async function cancelTx(id) {
+        if (!confirm('Отменить эту транзакцию? Смены снова станут доступны для оплаты.')) return;
+        hideError();
+        try {
+            const res = await fetch(CANCEL_TRANSACTION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transaction_id: id })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отменить транзакцию');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || 'Ошибка при отмене транзакции.');
+        }
+    }
+
+    // ==========================================================
+    // New transaction modal
+    // ==========================================================
+    async function openTxModal(employeeId) {
+        txEmployee = employees.find(e => e.id === employeeId);
+        if (!txEmployee) return;
+
+        txAmountManuallyEdited = false;
+        document.getElementById('txEmployeeName').textContent = txEmployee.full_name;
+        document.getElementById('txAmount').value = '';
+        document.getElementById('txError').classList.remove('show');
+        document.getElementById('txForm').style.display = 'block';
+        document.getElementById('txSuccess').classList.remove('show');
+        document.getElementById('txSessionList').innerHTML = '<div class="state-box" style="padding:16px;">Загрузка...</div>';
+        document.getElementById('txSaveBtn').disabled = true;
+        document.getElementById('txOverlay').classList.add('show');
+
+        try {
+            const res = await fetch(`${GET_UNPAID_SESSIONS_URL}?employee_id=${employeeId}`, { method: 'GET' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки смен');
+            txSessions = data.sessions || [];
+            renderTxSessionList();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('txSessionList').innerHTML = emptyStateHtml('Не удалось загрузить смены');
+        }
+    }
+
+    function renderTxSessionList() {
+        const list = document.getElementById('txSessionList');
+        if (txSessions.length === 0) {
+            list.innerHTML = emptyStateHtml('Нет доступных смен');
+            updateTxSummary();
+            return;
+        }
+        list.innerHTML = txSessions.map(s => `
+            <label class="session-picker-row">
+                <input type="checkbox" checked data-session-id="${s.id}" onchange="updateTxSummary()">
+                <div class="session-picker-info">
+                    <div class="session-picker-project">${escapeHtml(s.project_name)}</div>
+                    <div class="session-picker-meta">${s.session_date} · ${s.duration_hours} ч</div>
+                </div>
+                <div class="session-picker-amount">${money(s.calculated_salary)}</div>
+            </label>`).join('');
+        updateTxSummary();
+    }
+
+    function getSelectedSessionIds() {
+        return Array.from(document.querySelectorAll('#txSessionList input[type="checkbox"]:checked'))
+            .map(cb => Number(cb.dataset.sessionId));
+    }
+
+    function updateTxSummary() {
+        const selectedIds = getSelectedSessionIds();
+        const selected = txSessions.filter(s => selectedIds.includes(s.id));
+        const total = selected.reduce((sum, s) => sum + Number(s.calculated_salary), 0);
+
+        document.getElementById('txSelectedSummary').innerHTML =
+            `<span>Выбрано смен: ${selected.length}</span><b>${money(total)}</b>`;
+
+        if (!txAmountManuallyEdited) {
+            document.getElementById('txAmount').value = total ? total.toFixed(2) : '';
+        }
+        validateTxForm();
+    }
+
+    document.getElementById('txAmount').addEventListener('input', () => { txAmountManuallyEdited = true; });
+
+    function validateTxForm() {
+        const amount = Number(document.getElementById('txAmount').value);
+        const hasSessions = getSelectedSessionIds().length > 0;
+        document.getElementById('txSaveBtn').disabled = !(hasSessions && amount > 0);
+    }
+
+    function closeTxModal() {
+        if (saving) return;
+        document.getElementById('txOverlay').classList.remove('show');
+        txEmployee = null;
+        txSessions = [];
+    }
+
+    async function submitTx() {
+        if (saving || !txEmployee) return;
+        const sessionIds = getSelectedSessionIds();
+        const amount = Number(document.getElementById('txAmount').value);
+        const errorBox = document.getElementById('txError');
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById('txSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Отправка...';
+
+        try {
+            const res = await fetch(CREATE_TRANSACTION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employee_id: txEmployee.id, session_ids: sessionIds, amount })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось создать транзакцию');
+
+            document.getElementById('txForm').style.display = 'none';
+            document.getElementById('txSuccess').classList.add('show');
+            setTimeout(() => { closeTxModal(); loadData(); }, 1200);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при создании транзакции. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Отправить в Telegram';
+            validateTxForm();
+        }
+    }
+
+    // ==========================================================
+    // Overlay dismiss handlers
+    // ==========================================================
+    document.getElementById('txOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'txOverlay') closeTxModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTxModal();
+    });
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    renderNav('payments.html');
+    loadData();
+</script>
+
+</body>
+</html>

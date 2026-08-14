@@ -7,6 +7,7 @@ const NAV_PAGES = [
     { href: 'employees.html', label: 'Сотрудники' },
     { href: 'objects.html', label: 'Объекты' },
     { href: 'sessions.html', label: 'Рабочие сессии' },
+    { href: 'payments.html', label: 'Оплата' },
     { href: 'references.html', label: 'Справочники' }
 ];
 
