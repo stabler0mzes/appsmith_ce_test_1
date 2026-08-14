@@ -55,6 +55,14 @@
             <label for="filterDateTo">Дата до</label>
             <input type="date" id="filterDateTo" onchange="loadData()">
         </div>
+        <div class="filter-group">
+            <label for="filterPaid">Оплата</label>
+            <select id="filterPaid" onchange="loadData()">
+                <option value="">Все</option>
+                <option value="true">Оплачено</option>
+                <option value="false">Не оплачено</option>
+            </select>
+        </div>
         <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
     </div>
 
@@ -192,10 +200,12 @@
         const projectId = document.getElementById('filterProject').value;
         const dateFrom = document.getElementById('filterDateFrom').value;
         const dateTo = document.getElementById('filterDateTo').value;
+        const isPaid = document.getElementById('filterPaid').value;
         if (employeeId) params.set('employee_id', employeeId);
         if (projectId) params.set('project_id', projectId);
         if (dateFrom) params.set('date_from', dateFrom);
         if (dateTo) params.set('date_to', dateTo);
+        if (isPaid) params.set('is_paid', isPaid);
         return params.toString();
     }
 
@@ -260,6 +270,7 @@
         document.getElementById('filterProject').value = '';
         document.getElementById('filterDateFrom').value = '';
         document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterPaid').value = '';
         loadData();
     }
 
@@ -306,7 +317,7 @@
     function sessionRowHtml(s) {
         const timeRange = `${s.start_time || '—'} – ${s.end_time || 'активна'}`;
         return `
-            <div class="session-row" onclick="openEditSessionModal(${s.id})">
+            <div class="session-row${s.is_paid ? ' paid' : ''}" onclick="openEditSessionModal(${s.id})">
                 <div class="session-employee">
                     ${employeeAvatarHtml(s)}
                     <div class="session-employee-text">
@@ -320,8 +331,9 @@
                     <div class="session-time">${timeRange}</div>
                 </div>
                 <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
-                <div class="session-amount">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
+                <div class="session-amount${s.is_paid ? ' paid' : ''}">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
                 <div class="session-icons">
+                    ${s.is_paid ? `<svg class="session-icon-paid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="Оплачено"><path d="M20 6L9 17l-5-5"/></svg>` : ''}
                     ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
                     ${s.media_count > 0 ? `<button class="session-icon-media" onclick="event.stopPropagation(); openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
                 </div>

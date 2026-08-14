@@ -490,6 +490,7 @@ body {
     transition: background 0.15s;
 }
 .session-row:hover { background: #fafafa; }
+.session-row.paid { border-left: 3px solid var(--green); }
 
 .session-employee {
     display: flex;
@@ -551,6 +552,7 @@ body {
     font-size: 14px;
     font-weight: 700;
 }
+.session-amount.paid { color: var(--green); }
 
 .session-icons {
     display: flex;
@@ -562,6 +564,12 @@ body {
 }
 .session-icon-warning {
     color: var(--orange);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.session-icon-paid {
+    color: var(--green);
     width: 18px;
     height: 18px;
     flex-shrink: 0;
