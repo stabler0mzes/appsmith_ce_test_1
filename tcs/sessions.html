@@ -333,7 +333,6 @@
                 <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
                 <div class="session-amount${s.is_paid ? ' paid' : ''}">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
                 <div class="session-icons">
-                    ${s.is_paid ? `<svg class="session-icon-paid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" title="Оплачено"><path d="M20 6L9 17l-5-5"/></svg>` : ''}
                     ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
                     ${s.media_count > 0 ? `<button class="session-icon-media" onclick="event.stopPropagation(); openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
                 </div>

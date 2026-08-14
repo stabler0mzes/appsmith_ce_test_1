@@ -568,12 +568,6 @@ body {
     height: 18px;
     flex-shrink: 0;
 }
-.session-icon-paid {
-    color: var(--green);
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-}
 .session-icon-media {
     display: inline-flex;
     align-items: center;
