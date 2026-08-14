@@ -5,7 +5,8 @@
 const NAV_PAGES = [
     { href: 'employees.html', label: 'Сотрудники' },
     { href: 'objects.html', label: 'Объекты' },
-    { href: 'sessions.html', label: 'Рабочие сессии' }
+    { href: 'sessions.html', label: 'Рабочие сессии' },
+    { href: 'references.html', label: 'Справочники' }
 ];
 
 function renderNav(activeHref) {

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Справочники</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+</head>
+<body>
+
+<div class="page">
+    <nav class="top-nav" id="topNav"></nav>
+
+    <div class="topbar">
+        <div>
+            <h1>Справочники</h1>
+            <p>Направления деятельности, ставки и типы предупреждений</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+            Обновить
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+
+    <div class="section">
+        <div class="section-head-row">
+            <div class="section-head" style="margin-bottom:0;">
+                <h2>Направления деятельности</h2>
+                <span class="count-pill neutral" id="directionsCountPill" style="display:none;"></span>
+            </div>
+            <button class="add-btn" onclick="openDirectionModal(null)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+                Добавить
+            </button>
+        </div>
+        <div id="directionsContent"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-head-row">
+            <div class="section-head" style="margin-bottom:0;">
+                <h2>Стоимость часа работы</h2>
+                <span class="count-pill neutral" id="ratesCountPill" style="display:none;"></span>
+            </div>
+            <button class="add-btn" onclick="openRateModal(null)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+                Добавить
+            </button>
+        </div>
+        <div id="ratesContent"></div>
+    </div>
+
+    <div class="section">
+        <div class="section-head-row">
+            <div class="section-head" style="margin-bottom:0;">
+                <h2>Типы предупреждений</h2>
+                <span class="count-pill neutral" id="noteTypesCountPill" style="display:none;"></span>
+            </div>
+            <button class="add-btn" onclick="openNoteTypeModal(null)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+                Добавить
+            </button>
+        </div>
+        <div id="noteTypesContent"></div>
+    </div>
+</div>
+
+<!-- Direction modal -->
+<div class="overlay" id="directionOverlay">
+    <div class="modal">
+        <div id="directionForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="directionTitle">Направление деятельности</div>
+                    <div class="modal-subtitle">Название и описание</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="directionName">Название <span class="req">*</span></label>
+                    <input type="text" id="directionName" placeholder="Например, Столярные работы" oninput="validateDirectionForm()">
+                </div>
+                <div class="form-group">
+                    <label for="directionDescription">Описание <span class="opt">(необязательно)</span></label>
+                    <textarea id="directionDescription"></textarea>
+                </div>
+            </div>
+            <div class="modal-error" id="directionError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeDirectionModal()">Отмена</button>
+                <button class="btn btn-save" id="directionSaveBtn" disabled onclick="submitDirection()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="directionSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Сохранено</div>
+        </div>
+    </div>
+</div>
+
+<!-- Rate modal -->
+<div class="overlay" id="rateOverlay">
+    <div class="modal">
+        <div id="rateForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="rateTitle">Ставка</div>
+                    <div class="modal-subtitle">Стоимость часа работы</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ratePrice">Цена, грн/час <span class="req">*</span></label>
+                    <input type="text" id="ratePrice" placeholder="200" oninput="validateRateForm()">
+                </div>
+                <div class="form-group">
+                    <label for="ratePosition">Название должности <span class="opt">(необязательно)</span></label>
+                    <input type="text" id="ratePosition" placeholder="Например, Мастер">
+                </div>
+            </div>
+            <div class="modal-error" id="rateError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeRateModal()">Отмена</button>
+                <button class="btn btn-save" id="rateSaveBtn" disabled onclick="submitRate()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="rateSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Сохранено</div>
+        </div>
+    </div>
+</div>
+
+<!-- Note type modal -->
+<div class="overlay" id="noteTypeOverlay">
+    <div class="modal">
+        <div id="noteTypeForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="noteTypeTitle">Тип предупреждения</div>
+                    <div class="modal-subtitle">Название и описание</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="noteTypeName">Название <span class="req">*</span></label>
+                    <input type="text" id="noteTypeName" placeholder="Например, critical" oninput="validateNoteTypeForm()">
+                </div>
+                <div class="form-group">
+                    <label for="noteTypeDescription">Описание <span class="opt">(необязательно)</span></label>
+                    <textarea id="noteTypeDescription"></textarea>
+                </div>
+            </div>
+            <div class="modal-error" id="noteTypeError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeNoteTypeModal()">Отмена</button>
+                <button class="btn btn-save" id="noteTypeSaveBtn" disabled onclick="submitNoteType()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="noteTypeSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Сохранено</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const GET_REFERENCE_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-reference-data';
+    const SAVE_REFERENCE_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-reference-item';
+    const DELETE_REFERENCE_URL = 'https://n8n.vseproi.de/webhook/tcs2-delete-reference-item';
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let directions = [];
+    let rates = [];
+    let noteTypes = [];
+    let currentDirection = null;
+    let currentRate = null;
+    let currentNoteType = null;
+    let saving = false;
+
+    // ==========================================================
+    // Load data
+    // ==========================================================
+    async function loadData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const res = await fetch(GET_REFERENCE_URL, { method: 'GET' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            directions = data.activity_directions || [];
+            rates = data.hourly_rates || [];
+            noteTypes = data.note_types || [];
+
+            renderDirections();
+            renderRates();
+            renderNoteTypes();
+        } catch (e) {
+            console.error(e);
+            showError('Не удалось загрузить справочники. Попробуйте обновить страницу.');
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    // ==========================================================
+    // Directions
+    // ==========================================================
+    function renderDirections() {
+        const pill = document.getElementById('directionsCountPill');
+        pill.style.display = directions.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = directions.length;
+
+        const content = document.getElementById('directionsContent');
+        if (directions.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет направлений деятельности');
+            return;
+        }
+        content.innerHTML = `<div class="ref-list">${directions.map(d => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${escapeHtml(d.direction_name)}
+                        ${d.usage_count > 0 ? `<span class="ref-item-usage">Используется: ${d.usage_count}</span>` : ''}
+                    </div>
+                    ${d.direction_description ? `<div class="ref-item-sub">${escapeHtml(d.direction_description)}</div>` : ''}
+                </div>
+                <div class="ref-item-actions">
+                    <button class="action-btn secondary" onclick="openDirectionModal(${d.id})">Редактировать</button>
+                    <button class="action-btn secondary" ${d.usage_count > 0 ? 'disabled title="Используется, нельзя удалить"' : ''} onclick="deleteDirection(${d.id})">Удалить</button>
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    function openDirectionModal(id) {
+        currentDirection = id ? directions.find(d => d.id === id) : null;
+        document.getElementById('directionTitle').textContent = currentDirection ? 'Редактирование направления' : 'Новое направление';
+        document.getElementById('directionName').value = currentDirection?.direction_name || '';
+        document.getElementById('directionDescription').value = currentDirection?.direction_description || '';
+        document.getElementById('directionError').classList.remove('show');
+        document.getElementById('directionForm').style.display = 'block';
+        document.getElementById('directionSuccess').classList.remove('show');
+        validateDirectionForm();
+        document.getElementById('directionOverlay').classList.add('show');
+    }
+
+    function closeDirectionModal() {
+        if (saving) return;
+        document.getElementById('directionOverlay').classList.remove('show');
+        currentDirection = null;
+    }
+
+    function validateDirectionForm() {
+        document.getElementById('directionSaveBtn').disabled = !document.getElementById('directionName').value.trim();
+    }
+
+    async function submitDirection() {
+        if (saving) return;
+        const payload = {
+            entity: 'direction',
+            id: currentDirection?.id || null,
+            direction_name: document.getElementById('directionName').value.trim(),
+            direction_description: document.getElementById('directionDescription').value.trim() || null
+        };
+        await submitReferenceItem(payload, 'directionError', 'directionSaveBtn', 'directionForm', 'directionSuccess', closeDirectionModal, validateDirectionForm);
+    }
+
+    async function deleteDirection(id) {
+        const d = directions.find(x => x.id === id);
+        if (!d || !confirm(`Удалить направление «${d.direction_name}»?`)) return;
+        await deleteReferenceItem('direction', id);
+    }
+
+    // ==========================================================
+    // Rates
+    // ==========================================================
+    function renderRates() {
+        const pill = document.getElementById('ratesCountPill');
+        pill.style.display = rates.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = rates.length;
+
+        const content = document.getElementById('ratesContent');
+        if (rates.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет ставок');
+            return;
+        }
+        content.innerHTML = `<div class="ref-list">${rates.map(r => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${r.price_per_hour} грн/час
+                        ${r.usage_count > 0 ? `<span class="ref-item-usage">Используется: ${r.usage_count}</span>` : ''}
+                    </div>
+                    ${r.position_name ? `<div class="ref-item-sub">${escapeHtml(r.position_name)}</div>` : ''}
+                </div>
+                <div class="ref-item-actions">
+                    <button class="action-btn secondary" onclick="openRateModal(${r.id})">Редактировать</button>
+                    <button class="action-btn secondary" ${r.usage_count > 0 ? 'disabled title="Используется, нельзя удалить"' : ''} onclick="deleteRate(${r.id})">Удалить</button>
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    function openRateModal(id) {
+        currentRate = id ? rates.find(r => r.id === id) : null;
+        document.getElementById('rateTitle').textContent = currentRate ? 'Редактирование ставки' : 'Новая ставка';
+        document.getElementById('ratePrice').value = currentRate?.price_per_hour ?? '';
+        document.getElementById('ratePosition').value = currentRate?.position_name || '';
+        document.getElementById('rateError').classList.remove('show');
+        document.getElementById('rateForm').style.display = 'block';
+        document.getElementById('rateSuccess').classList.remove('show');
+        validateRateForm();
+        document.getElementById('rateOverlay').classList.add('show');
+    }
+
+    function closeRateModal() {
+        if (saving) return;
+        document.getElementById('rateOverlay').classList.remove('show');
+        currentRate = null;
+    }
+
+    function validateRateForm() {
+        const price = document.getElementById('ratePrice').value.trim();
+        document.getElementById('rateSaveBtn').disabled = !(price !== '' && Number(price) > 0);
+    }
+
+    async function submitRate() {
+        if (saving) return;
+        const payload = {
+            entity: 'rate',
+            id: currentRate?.id || null,
+            price_per_hour: Number(document.getElementById('ratePrice').value),
+            position_name: document.getElementById('ratePosition').value.trim() || null
+        };
+        await submitReferenceItem(payload, 'rateError', 'rateSaveBtn', 'rateForm', 'rateSuccess', closeRateModal, validateRateForm);
+    }
+
+    async function deleteRate(id) {
+        const r = rates.find(x => x.id === id);
+        if (!r || !confirm(`Удалить ставку «${r.price_per_hour} грн/час»?`)) return;
+        await deleteReferenceItem('rate', id);
+    }
+
+    // ==========================================================
+    // Note types
+    // ==========================================================
+    function renderNoteTypes() {
+        const pill = document.getElementById('noteTypesCountPill');
+        pill.style.display = noteTypes.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = noteTypes.length;
+
+        const content = document.getElementById('noteTypesContent');
+        if (noteTypes.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет типов предупреждений');
+            return;
+        }
+        content.innerHTML = `<div class="ref-list">${noteTypes.map(n => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${escapeHtml(n.note_type_name)}
+                        ${n.usage_count > 0 ? `<span class="ref-item-usage">Используется: ${n.usage_count}</span>` : ''}
+                    </div>
+                    ${n.note_type_description ? `<div class="ref-item-sub">${escapeHtml(n.note_type_description)}</div>` : ''}
+                </div>
+                <div class="ref-item-actions">
+                    <button class="action-btn secondary" onclick="openNoteTypeModal(${n.id})">Редактировать</button>
+                    <button class="action-btn secondary" ${n.usage_count > 0 ? 'disabled title="Используется, нельзя удалить"' : ''} onclick="deleteNoteType(${n.id})">Удалить</button>
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    function openNoteTypeModal(id) {
+        currentNoteType = id ? noteTypes.find(n => n.id === id) : null;
+        document.getElementById('noteTypeTitle').textContent = currentNoteType ? 'Редактирование типа' : 'Новый тип предупреждения';
+        document.getElementById('noteTypeName').value = currentNoteType?.note_type_name || '';
+        document.getElementById('noteTypeDescription').value = currentNoteType?.note_type_description || '';
+        document.getElementById('noteTypeError').classList.remove('show');
+        document.getElementById('noteTypeForm').style.display = 'block';
+        document.getElementById('noteTypeSuccess').classList.remove('show');
+        validateNoteTypeForm();
+        document.getElementById('noteTypeOverlay').classList.add('show');
+    }
+
+    function closeNoteTypeModal() {
+        if (saving) return;
+        document.getElementById('noteTypeOverlay').classList.remove('show');
+        currentNoteType = null;
+    }
+
+    function validateNoteTypeForm() {
+        document.getElementById('noteTypeSaveBtn').disabled = !document.getElementById('noteTypeName').value.trim();
+    }
+
+    async function submitNoteType() {
+        if (saving) return;
+        const payload = {
+            entity: 'note_type',
+            id: currentNoteType?.id || null,
+            note_type_name: document.getElementById('noteTypeName').value.trim(),
+            note_type_description: document.getElementById('noteTypeDescription').value.trim() || null
+        };
+        await submitReferenceItem(payload, 'noteTypeError', 'noteTypeSaveBtn', 'noteTypeForm', 'noteTypeSuccess', closeNoteTypeModal, validateNoteTypeForm);
+    }
+
+    async function deleteNoteType(id) {
+        const n = noteTypes.find(x => x.id === id);
+        if (!n || !confirm(`Удалить тип предупреждения «${n.note_type_name}»?`)) return;
+        await deleteReferenceItem('note_type', id);
+    }
+
+    // ==========================================================
+    // Shared save/delete logic
+    // ==========================================================
+    async function submitReferenceItem(payload, errorId, saveBtnId, formId, successId, closeFn, validateFn) {
+        const errorBox = document.getElementById(errorId);
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById(saveBtnId);
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+
+        try {
+            const res = await fetch(SAVE_REFERENCE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить запись');
+
+            document.getElementById(formId).style.display = 'none';
+            document.getElementById(successId).classList.add('show');
+            setTimeout(() => { closeFn(); loadData(); }, 1000);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            validateFn();
+        }
+    }
+
+    async function deleteReferenceItem(entity, id) {
+        hideError();
+        try {
+            const res = await fetch(DELETE_REFERENCE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entity, id })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось удалить запись');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || 'Ошибка при удалении.');
+        }
+    }
+
+    // ==========================================================
+    // Overlay dismiss handlers
+    // ==========================================================
+    document.getElementById('directionOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'directionOverlay') closeDirectionModal();
+    });
+    document.getElementById('rateOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'rateOverlay') closeRateModal();
+    });
+    document.getElementById('noteTypeOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'noteTypeOverlay') closeNoteTypeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeDirectionModal(); closeRateModal(); closeNoteTypeModal(); }
+    });
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    renderNav('references.html');
+    loadData();
+</script>
+
+</body>
+</html>
