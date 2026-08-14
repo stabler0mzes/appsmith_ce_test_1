@@ -430,6 +430,48 @@ body {
 .stat-card.unpaid .stat-label { color: var(--red); }
 .stat-card.unpaid .stat-value { color: var(--red); font-size: 25px; }
 
+.stat-card.revenue-card {
+    grid-column: span 2;
+    min-width: 300px;
+}
+.revenue-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--red-bg);
+    overflow: hidden;
+    margin-top: 12px;
+}
+.revenue-bar-paid {
+    height: 100%;
+    background: var(--green);
+    opacity: 0.75;
+    border-radius: 999px;
+}
+.revenue-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.revenue-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.revenue-legend-item i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.revenue-legend-item.paid { color: var(--green); }
+.revenue-legend-item.paid i { background: var(--green); }
+.revenue-legend-item.unpaid { color: var(--red); }
+.revenue-legend-item.unpaid i { background: var(--red); }
+
 /* Filters */
 .filters-row {
     display: flex;
