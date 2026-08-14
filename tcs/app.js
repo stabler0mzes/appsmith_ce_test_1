@@ -12,10 +12,10 @@ const NAV_PAGES = [
 ];
 
 function renderNav(activeHref) {
-    const nav = document.getElementById('topNav');
+    const nav = document.getElementById('sidebarNav');
     if (!nav) return;
     nav.innerHTML = NAV_PAGES.map(p =>
-        `<a href="${p.href}" class="nav-link${p.href === activeHref ? ' active' : ''}">${p.label}</a>`
+        `<a href="${p.href}" class="sidebar-link${p.href === activeHref ? ' active' : ''}">${p.label}</a>`
     ).join('');
 }
 
