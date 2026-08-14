@@ -17,6 +17,33 @@ function renderNav(activeHref) {
     nav.innerHTML = NAV_PAGES.map(p =>
         `<a href="${p.href}" class="sidebar-link${p.href === activeHref ? ' active' : ''}">${p.label}</a>`
     ).join('');
+    initMobileNav();
+}
+
+// ==========================================================
+// Mobile sidebar (hamburger toggle + backdrop)
+// ==========================================================
+function initMobileNav() {
+    if (document.getElementById('mobileNavToggle')) return;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'mobileNavToggle';
+    toggleBtn.className = 'mobile-nav-toggle';
+    toggleBtn.type = 'button';
+    toggleBtn.setAttribute('aria-label', 'Открыть меню');
+    toggleBtn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h14M3 10h14M3 15h14"/></svg>';
+    toggleBtn.addEventListener('click', () => document.body.classList.toggle('sidebar-open'));
+    document.body.appendChild(toggleBtn);
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'sidebarBackdrop';
+    backdrop.className = 'sidebar-backdrop';
+    backdrop.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+    document.body.appendChild(backdrop);
+
+    document.querySelectorAll('#sidebarNav .sidebar-link').forEach(link => {
+        link.addEventListener('click', () => document.body.classList.remove('sidebar-open'));
+    });
 }
 
 // ==========================================================
