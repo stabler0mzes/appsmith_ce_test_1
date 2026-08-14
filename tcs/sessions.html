@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Рабочие сессии</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+</head>
+<body>
+
+<div class="page">
+    <nav class="top-nav" id="topNav"></nav>
+
+    <div class="topbar">
+        <div>
+            <h1>Рабочие сессии</h1>
+            <p>Все рабочие сессии сотрудников и расчёты по ним</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+            Обновить
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="filters-row">
+        <div class="filter-group">
+            <label for="filterEmployee">Сотрудник</label>
+            <select id="filterEmployee" onchange="loadData()">
+                <option value="">Все сотрудники</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filterProject">Объект</label>
+            <select id="filterProject" onchange="loadData()">
+                <option value="">Все объекты</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filterDateFrom">Дата от</label>
+            <input type="date" id="filterDateFrom" onchange="loadData()">
+        </div>
+        <div class="filter-group">
+            <label for="filterDateTo">Дата до</label>
+            <input type="date" id="filterDateTo" onchange="loadData()">
+        </div>
+        <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
+    </div>
+
+    <div id="sessionsContent"></div>
+</div>
+
+<!-- Edit session modal -->
+<div class="overlay" id="editSessionOverlay">
+    <div class="modal">
+        <div id="editSessionForm">
+            <div class="modal-header">
+                <div class="avatar" id="sessionAvatar"></div>
+                <div>
+                    <div class="modal-title" id="sessionTitle">Рабочая сессия</div>
+                    <div class="modal-subtitle">Редактирование сессии</div>
+                </div>
+                <div class="modal-header-active">
+                    <span class="toggle-label">Оплачено</span>
+                    <label class="switch">
+                        <input type="checkbox" id="sessionIsPaid">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="readonly-info" id="sessionNoteInfo" style="display:none;"></div>
+
+                <div class="form-group">
+                    <label for="sessionProject">Объект <span class="req">*</span></label>
+                    <select id="sessionProject" onchange="validateEditSessionForm()">
+                        <option value="">Выберите объект</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="sessionRate">Ставка <span class="req">*</span></label>
+                    <select id="sessionRate" onchange="validateEditSessionForm()">
+                        <option value="">Выберите ставку</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="sessionStart">Начало <span class="req">*</span></label>
+                        <input type="datetime-local" id="sessionStart" oninput="validateEditSessionForm()">
+                    </div>
+                    <div class="form-group">
+                        <label for="sessionEnd">Окончание <span class="opt">(пусто — сессия активна)</span></label>
+                        <input type="datetime-local" id="sessionEnd">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-error" id="sessionError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeEditSessionModal()">Отмена</button>
+                <button class="btn action-btn secondary" id="forceEndBtn" onclick="forceEndSession()" style="display:none; flex:1; margin-top:0;">Завершить сессию</button>
+                <button class="btn btn-save" id="sessionSaveBtn" disabled onclick="submitEditSession()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="sessionSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Сохранено</div>
+            <div class="sub" id="sessionSuccessSub"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Media preview modal -->
+<div class="overlay" id="mediaOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Фото/видео отчёты</div>
+                <div class="modal-subtitle" id="mediaSubtitle"></div>
+            </div>
+        </div>
+        <div class="media-grid" id="mediaGrid"></div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeMediaModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const GET_SESSIONS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-work-sessions';
+    const GET_PROJECTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-projects';
+    const UPDATE_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-update-work-session';
+    const FORCE_END_URL = 'https://n8n.vseproi.de/webhook/tcs2-force-end-session';
+    const GET_MEDIA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-media';
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let sessions = [];
+    let summary = { total_sessions: 0, total_hours: 0, total_amount: 0, paid_amount: 0, unpaid_amount: 0 };
+    let filterEmployees = [];
+    let hourlyRates = [];
+    let activeProjects = [];
+    let currentSession = null;
+    let saving = false;
+
+    // ==========================================================
+    // Helpers
+    // ==========================================================
+    function employeeAvatarHtml(s) {
+        if (s.avatar_url) return `<img class="avatar" src="${escapeHtml(s.avatar_url)}" alt="">`;
+        const parts = (s.employee_name || '').trim().split(/\s+/);
+        const ini = ((parts[0] ? parts[0][0] : '') + (parts[1] ? parts[1][0] : '')).toUpperCase() || '?';
+        return `<div class="avatar">${escapeHtml(ini)}</div>`;
+    }
+
+    function money(n) {
+        return (n == null ? 0 : Number(n)).toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₴';
+    }
+
+    function hours(n) {
+        return (n == null ? 0 : Number(n)).toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function rateLabel(id) {
+        const r = hourlyRates.find(x => x.id === id);
+        return r ? `${r.price_per_hour} грн/час — ${r.position_name || ''}` : '—';
+    }
+
+    // ==========================================================
+    // Load data
+    // ==========================================================
+    function buildQuery() {
+        const params = new URLSearchParams();
+        const employeeId = document.getElementById('filterEmployee').value;
+        const projectId = document.getElementById('filterProject').value;
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+        if (employeeId) params.set('employee_id', employeeId);
+        if (projectId) params.set('project_id', projectId);
+        if (dateFrom) params.set('date_from', dateFrom);
+        if (dateTo) params.set('date_to', dateTo);
+        return params.toString();
+    }
+
+    async function loadData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const query = buildQuery();
+            const [sessionsRes, projectsRes] = await Promise.all([
+                fetch(GET_SESSIONS_URL + (query ? '?' + query : ''), { method: 'GET' }),
+                fetch(GET_PROJECTS_URL, { method: 'GET' })
+            ]);
+            if (!sessionsRes.ok) throw new Error('HTTP ' + sessionsRes.status);
+            if (!projectsRes.ok) throw new Error('HTTP ' + projectsRes.status);
+
+            const data = await sessionsRes.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            const projectsData = await projectsRes.json();
+            if (!projectsData.success) throw new Error(projectsData.error || 'Ошибка загрузки объектов');
+
+            sessions = data.sessions || [];
+            summary = data.summary || summary;
+            filterEmployees = data.employees || [];
+            hourlyRates = data.hourly_rates || [];
+            activeProjects = (projectsData.projects || []).filter(p => p.is_active);
+
+            populateFilterOptions();
+            renderStats();
+            renderSessions();
+        } catch (e) {
+            console.error(e);
+            showError('Не удалось загрузить рабочие сессии. Попробуйте обновить страницу.');
+            document.getElementById('sessionsContent').innerHTML = '';
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    function populateFilterOptions() {
+        const empSelect = document.getElementById('filterEmployee');
+        const currentEmp = empSelect.value;
+        empSelect.innerHTML = '<option value="">Все сотрудники</option>' + filterEmployees.map(e =>
+            `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`
+        ).join('');
+        empSelect.value = currentEmp;
+
+        const projSelect = document.getElementById('filterProject');
+        const currentProj = projSelect.value;
+        projSelect.innerHTML = '<option value="">Все объекты</option>' + activeProjects.map(p =>
+            `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
+        ).join('');
+        projSelect.value = currentProj;
+    }
+
+    function resetFilters() {
+        document.getElementById('filterEmployee').value = '';
+        document.getElementById('filterProject').value = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        loadData();
+    }
+
+    // ==========================================================
+    // Summary
+    // ==========================================================
+    function renderStats() {
+        const s = summary;
+        document.getElementById('statsRow').innerHTML = `
+            <div class="stat-card">
+                <div class="stat-label">Сессий</div>
+                <div class="stat-value">${s.total_sessions}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Отработано часов</div>
+                <div class="stat-value">${hours(s.total_hours)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Начислено всего</div>
+                <div class="stat-value">${money(s.total_amount)}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Оплачено</div>
+                <div class="stat-value">${money(s.paid_amount)}</div>
+            </div>
+            <div class="stat-card unpaid">
+                <div class="stat-label">Не оплачено</div>
+                <div class="stat-value">${money(s.unpaid_amount)}</div>
+            </div>`;
+    }
+
+    // ==========================================================
+    // Session list
+    // ==========================================================
+    function renderSessions() {
+        const content = document.getElementById('sessionsContent');
+        if (sessions.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет рабочих сессий по заданным фильтрам');
+            return;
+        }
+        content.innerHTML = `<div class="session-list">${sessions.map(sessionRowHtml).join('')}</div>`;
+    }
+
+    function sessionRowHtml(s) {
+        const timeRange = `${s.start_time || '—'} – ${s.end_time || 'активна'}`;
+        return `
+            <div class="session-row" onclick="openEditSessionModal(${s.id})">
+                <div class="session-employee">
+                    ${employeeAvatarHtml(s)}
+                    <div class="session-employee-text">
+                        <div class="session-employee-name">${escapeHtml(s.employee_name)}</div>
+                        <div class="session-employee-rate">${s.price_per_hour != null ? s.price_per_hour + ' грн/час' : '—'}</div>
+                    </div>
+                </div>
+                <div class="session-project">${escapeHtml(s.project_name)}</div>
+                <div class="session-datetime">
+                    <div class="session-date">${s.session_date}</div>
+                    <div class="session-time">${timeRange}</div>
+                </div>
+                <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
+                <div class="session-amount">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
+                <div class="session-icons">
+                    ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
+                    ${s.media_count > 0 ? `<button class="session-icon-media" onclick="event.stopPropagation(); openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
+                </div>
+            </div>`;
+    }
+
+    // ==========================================================
+    // Edit session modal
+    // ==========================================================
+    function openEditSessionModal(sessionId) {
+        currentSession = sessions.find(s => s.id === sessionId);
+        if (!currentSession) return;
+        const s = currentSession;
+
+        document.getElementById('sessionAvatar').outerHTML = employeeAvatarHtml(s).replace('class="avatar"', 'class="avatar" id="sessionAvatar"');
+        document.getElementById('sessionTitle').textContent = s.employee_name;
+        document.getElementById('sessionIsPaid').checked = !!s.is_paid;
+
+        if (s.note_text) {
+            document.getElementById('sessionNoteInfo').style.display = 'flex';
+            document.getElementById('sessionNoteInfo').innerHTML = `<div><b>${s.note_type_name === 'warning' ? 'Предупреждение' : 'Примечание'}:</b> ${escapeHtml(s.note_text)}</div>`;
+        } else {
+            document.getElementById('sessionNoteInfo').style.display = 'none';
+        }
+
+        const projSelect = document.getElementById('sessionProject');
+        projSelect.innerHTML = '<option value="">Выберите объект</option>' + activeProjects.map(p =>
+            `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
+        ).join('');
+        projSelect.value = s.project_id;
+
+        const rateSelect = document.getElementById('sessionRate');
+        rateSelect.innerHTML = '<option value="">Выберите ставку</option>' + hourlyRates.map(r =>
+            `<option value="${r.id}">${r.price_per_hour} грн/час — ${escapeHtml(r.position_name || '')}</option>`
+        ).join('');
+        rateSelect.value = s.hourly_rate_id;
+
+        document.getElementById('sessionStart').value = s.start_datetime_local || '';
+        document.getElementById('sessionEnd').value = s.end_datetime_local || '';
+
+        document.getElementById('forceEndBtn').style.display = s.end_datetime_local ? 'none' : 'block';
+
+        document.getElementById('sessionError').classList.remove('show');
+        document.getElementById('editSessionForm').style.display = 'block';
+        document.getElementById('sessionSuccess').classList.remove('show');
+
+        validateEditSessionForm();
+        document.getElementById('editSessionOverlay').classList.add('show');
+    }
+
+    function closeEditSessionModal() {
+        if (saving) return;
+        document.getElementById('editSessionOverlay').classList.remove('show');
+        currentSession = null;
+    }
+
+    function validateEditSessionForm() {
+        const project = document.getElementById('sessionProject').value;
+        const rate = document.getElementById('sessionRate').value;
+        const start = document.getElementById('sessionStart').value;
+        document.getElementById('sessionSaveBtn').disabled = !(project && rate && start);
+    }
+
+    async function submitEditSession() {
+        if (!currentSession || saving) return;
+
+        const payload = {
+            session_id: currentSession.id,
+            project_id: Number(document.getElementById('sessionProject').value),
+            hourly_rate_id: Number(document.getElementById('sessionRate').value),
+            start_datetime: document.getElementById('sessionStart').value,
+            end_datetime: document.getElementById('sessionEnd').value || null,
+            is_paid: document.getElementById('sessionIsPaid').checked
+        };
+
+        const errorBox = document.getElementById('sessionError');
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById('sessionSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+
+        try {
+            const res = await fetch(UPDATE_SESSION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить сессию');
+
+            document.getElementById('editSessionForm').style.display = 'none';
+            document.getElementById('sessionSuccessSub').textContent = 'Данные сессии обновлены';
+            document.getElementById('sessionSuccess').classList.add('show');
+
+            setTimeout(() => { closeEditSessionModal(); loadData(); }, 1200);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            validateEditSessionForm();
+        }
+    }
+
+    async function forceEndSession() {
+        if (!currentSession || saving) return;
+        if (!confirm(`Принудительно завершить сессию сотрудника «${currentSession.employee_name}»?`)) return;
+
+        saving = true;
+        try {
+            const res = await fetch(FORCE_END_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSession.id })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось завершить сессию');
+
+            closeEditSessionModal();
+            loadData();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('sessionError').textContent = e.message || 'Ошибка при завершении сессии.';
+            document.getElementById('sessionError').classList.add('show');
+        } finally {
+            saving = false;
+        }
+    }
+
+    // ==========================================================
+    // Media modal
+    // ==========================================================
+    async function openMediaModal(sessionId) {
+        const s = sessions.find(x => x.id === sessionId);
+        document.getElementById('mediaSubtitle').textContent = s ? s.employee_name + ' — ' + s.session_date : '';
+        document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Загрузка...');
+        document.getElementById('mediaOverlay').classList.add('show');
+
+        try {
+            const res = await fetch(GET_MEDIA_URL + '?session_id=' + sessionId);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки медиа');
+
+            const media = data.media || [];
+            if (media.length === 0) {
+                document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Нет файлов');
+                return;
+            }
+            document.getElementById('mediaGrid').innerHTML = media.map(m =>
+                m.file_type === 'video'
+                    ? `<video src="${escapeHtml(m.file_path)}" controls></video>`
+                    : `<a href="${escapeHtml(m.file_path)}" target="_blank"><img src="${escapeHtml(m.file_path)}" alt=""></a>`
+            ).join('');
+        } catch (e) {
+            console.error(e);
+            document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Не удалось загрузить файлы');
+        }
+    }
+
+    function closeMediaModal() {
+        document.getElementById('mediaOverlay').classList.remove('show');
+    }
+
+    // ==========================================================
+    // Overlay dismiss handlers
+    // ==========================================================
+    document.getElementById('editSessionOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'editSessionOverlay') closeEditSessionModal();
+    });
+    document.getElementById('mediaOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'mediaOverlay') closeMediaModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeEditSessionModal(); closeMediaModal(); }
+    });
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    renderNav('sessions.html');
+    loadData();
+</script>
+
+</body>
+</html>

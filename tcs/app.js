@@ -4,7 +4,8 @@
 // Add an entry here whenever a new page is added to the admin site.
 const NAV_PAGES = [
     { href: 'employees.html', label: 'Сотрудники' },
-    { href: 'objects.html', label: 'Объекты' }
+    { href: 'objects.html', label: 'Объекты' },
+    { href: 'sessions.html', label: 'Рабочие сессии' }
 ];
 
 function renderNav(activeHref) {
