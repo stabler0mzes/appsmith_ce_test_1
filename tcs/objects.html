@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Объекты</title>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCftPNeaYugFF1A0Xrr3O4FI02YGDASnxg"></script>
 <script src="app.js"></script>
 </head>
 <body>
@@ -151,7 +150,7 @@
     // ==========================================================
     const GET_PROJECTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-projects';
     const SAVE_PROJECT_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-project';
-    const DEFAULT_MAP_CENTER = [50.4501, 30.5234]; // Киев
+    const DEFAULT_MAP_CENTER = { lat: 50.4501, lng: 30.5234 }; // Киев
 
     // ==========================================================
     // State
@@ -249,17 +248,29 @@
 
     function initProjectMap() {
         if (projectMap) return;
-        projectMap = L.map('projectMap').setView(DEFAULT_MAP_CENTER, 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(projectMap);
+        projectMap = new google.maps.Map(document.getElementById('projectMap'), {
+            center: DEFAULT_MAP_CENTER,
+            zoom: 12,
+            streetViewControl: false,
+            fullscreenControl: false,
+            mapTypeControl: true
+        });
 
-        projectMarker = L.marker(DEFAULT_MAP_CENTER, { draggable: true }).addTo(projectMap);
-        projectMarker.on('dragend', () => updateProjectCoords(projectMarker.getLatLng()));
-        projectMap.on('click', (e) => {
-            projectMarker.setLatLng(e.latlng);
-            updateProjectCoords(e.latlng);
+        projectMarker = new google.maps.Marker({
+            position: DEFAULT_MAP_CENTER,
+            map: projectMap,
+            draggable: true
+        });
+
+        projectMarker.addListener('dragend', () => {
+            const pos = projectMarker.getPosition();
+            updateProjectCoords({ lat: pos.lat(), lng: pos.lng() });
+        });
+
+        projectMap.addListener('click', (e) => {
+            const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+            projectMarker.setPosition(pos);
+            updateProjectCoords(pos);
         });
     }
 
@@ -295,13 +306,14 @@
             initProjectMap();
             const hasCoords = currentProject?.gps_latitude != null && currentProject?.gps_longitude != null;
             const center = hasCoords
-                ? [Number(currentProject.gps_latitude), Number(currentProject.gps_longitude)]
+                ? { lat: Number(currentProject.gps_latitude), lng: Number(currentProject.gps_longitude) }
                 : DEFAULT_MAP_CENTER;
-            projectMap.invalidateSize();
-            projectMap.setView(center, hasCoords ? 15 : 12);
-            projectMarker.setLatLng(center);
+            google.maps.event.trigger(projectMap, 'resize');
+            projectMap.setCenter(center);
+            projectMap.setZoom(hasCoords ? 16 : 12);
+            projectMarker.setPosition(center);
             if (hasCoords) {
-                updateProjectCoords({ lat: center[0], lng: center[1] });
+                updateProjectCoords(center);
             } else {
                 document.getElementById('projectCoords').textContent = 'Координаты не заданы';
                 delete document.getElementById('projectCoords').dataset.lat;
