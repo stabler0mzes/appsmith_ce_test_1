@@ -284,6 +284,14 @@
         const paidPct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
 
         document.getElementById('statsRow').innerHTML = `
+            <div class="stat-card">
+                <div class="stat-label">Сессий</div>
+                <div class="stat-value">${s.total_sessions}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Отработано часов</div>
+                <div class="stat-value">${hours(s.total_hours)}</div>
+            </div>
             <div class="stat-card revenue-card">
                 <div class="revenue-header">
                     <div class="stat-label">Начислено всего</div>
@@ -300,14 +308,6 @@
                         <div class="revenue-split-value">${money(s.unpaid_amount)}</div>
                     </div>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Сессий</div>
-                <div class="stat-value">${s.total_sessions}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Отработано часов</div>
-                <div class="stat-value">${hours(s.total_hours)}</div>
             </div>`;
     }
 
