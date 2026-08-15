@@ -871,7 +871,7 @@ label {
 label .req { color: #c0392b; }
 label .opt { color: var(--text-faint); font-weight: 500; }
 
-input[type="text"], input[type="tel"], input[type="date"], input[type="datetime-local"], select, textarea {
+input[type="text"], input[type="tel"], input[type="password"], input[type="date"], input[type="datetime-local"], select, textarea {
     width: 100%;
     padding: 10px 12px;
     font-size: 14px;
@@ -890,7 +890,7 @@ select {
     background-position: right 12px center;
     padding-right: 30px;
 }
-input[type="text"]:focus, input[type="tel"]:focus, input[type="date"]:focus, input[type="datetime-local"]:focus, select:focus, textarea:focus {
+input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus, input[type="date"]:focus, input[type="datetime-local"]:focus, select:focus, textarea:focus {
     outline: none;
     border-color: #b7b8bf;
     background: #ffffff;

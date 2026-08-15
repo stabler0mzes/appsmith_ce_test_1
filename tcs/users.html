@@ -80,6 +80,10 @@
                     <input type="password" id="userPassword" autocomplete="new-password" placeholder="Минимум 6 символов" oninput="validateUserForm()">
                 </div>
                 <div class="form-group">
+                    <label for="userPasswordConfirm" id="userPasswordConfirmLabel">Подтверждение пароля <span class="req">*</span></label>
+                    <input type="password" id="userPasswordConfirm" autocomplete="new-password" placeholder="Повторите пароль" oninput="validateUserForm()">
+                </div>
+                <div class="form-group">
                     <label for="userRole">Роль <span class="req">*</span></label>
                     <select id="userRole">
                         <option value="viewer">Наблюдатель — только просмотр</option>
@@ -181,16 +185,20 @@
         document.getElementById('userUsername').value = currentUser?.username || '';
         document.getElementById('userFullName').value = currentUser?.full_name || '';
         document.getElementById('userPassword').value = '';
+        document.getElementById('userPasswordConfirm').value = '';
         document.getElementById('userRole').value = currentUser?.role || 'viewer';
 
         const passwordLabel = document.getElementById('userPasswordLabel');
         const passwordInput = document.getElementById('userPassword');
+        const passwordConfirmLabel = document.getElementById('userPasswordConfirmLabel');
         if (currentUser) {
             passwordLabel.innerHTML = 'Пароль <span class="opt">(оставьте пустым, чтобы не менять)</span>';
             passwordInput.placeholder = 'Новый пароль (необязательно)';
+            passwordConfirmLabel.innerHTML = 'Подтверждение пароля <span class="opt">(если меняете пароль)</span>';
         } else {
             passwordLabel.innerHTML = 'Пароль <span class="req">*</span>';
             passwordInput.placeholder = 'Минимум 6 символов';
+            passwordConfirmLabel.innerHTML = 'Подтверждение пароля <span class="req">*</span>';
         }
 
         const activeWrap = document.getElementById('userActiveToggleWrap');
@@ -218,7 +226,30 @@
     function validateUserForm() {
         const username = document.getElementById('userUsername').value.trim();
         const password = document.getElementById('userPassword').value;
-        const ok = username && (currentUser || password.length >= 6) && (!password || password.length >= 6);
+        const passwordConfirm = document.getElementById('userPasswordConfirm').value;
+
+        const errorBox = document.getElementById('userError');
+        let error = null;
+
+        if (!username) {
+            error = null; // just disable the button, no need to show an error yet
+        } else if (!currentUser && !password) {
+            error = null;
+        } else if (password && password.length < 6) {
+            error = 'Пароль должен быть не короче 6 символов';
+        } else if (password !== passwordConfirm) {
+            error = 'Пароли не совпадают';
+        }
+
+        if (error) {
+            errorBox.textContent = error;
+            errorBox.classList.add('show');
+        } else {
+            errorBox.classList.remove('show');
+        }
+
+        const passwordOk = currentUser ? (password === passwordConfirm) : (password.length >= 6 && password === passwordConfirm);
+        const ok = username && passwordOk;
         document.getElementById('userSaveBtn').disabled = !ok;
     }
 
