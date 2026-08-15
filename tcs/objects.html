@@ -16,6 +16,7 @@
         TCS2
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarUser"></div>
 </aside>
 
 <div class="main">
@@ -179,7 +180,7 @@
         hideError();
 
         try {
-            const res = await fetch(GET_PROJECTS_URL, { method: 'GET' });
+            const res = await authFetch(GET_PROJECTS_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки объектов');
@@ -375,7 +376,7 @@
         saveBtn.textContent = 'Сохранение...';
 
         try {
-            const res = await fetch(SAVE_PROJECT_URL, {
+            const res = await authFetch(SAVE_PROJECT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -411,7 +412,7 @@
         if (!confirm(confirmMsg)) return;
 
         try {
-            const res = await fetch(SAVE_PROJECT_URL, {
+            const res = await authFetch(SAVE_PROJECT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -452,8 +453,10 @@
     // ==========================================================
     // Init
     // ==========================================================
-    renderNav('objects.html');
-    loadData();
+    if (requireAuth()) {
+        renderNav('objects.html');
+        loadData();
+    }
 </script>
 
 </body>

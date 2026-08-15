@@ -15,6 +15,7 @@
         TCS2
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarUser"></div>
 </aside>
 
 <div class="main">
@@ -244,7 +245,7 @@
         hideError();
 
         try {
-            const res = await fetch(QUEUE_URL, { method: 'GET' });
+            const res = await authFetch(QUEUE_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
@@ -491,7 +492,7 @@
         saveBtn.textContent = 'Сохранение...';
 
         try {
-            const res = await fetch(SAVE_ACTIVATION_URL, {
+            const res = await authFetch(SAVE_ACTIVATION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -612,7 +613,7 @@
         saveBtn.textContent = 'Сохранение...';
 
         try {
-            const res = await fetch(UPDATE_EMPLOYEE_URL, {
+            const res = await authFetch(UPDATE_EMPLOYEE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -654,8 +655,10 @@
     // ==========================================================
     // Init
     // ==========================================================
-    renderNav('employees.html');
-    loadData();
+    if (requireAuth()) {
+        renderNav('employees.html');
+        loadData();
+    }
 </script>
 
 </body>

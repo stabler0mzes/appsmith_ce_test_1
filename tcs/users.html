@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пользователи</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-badge">TC</div>
+        TCS2
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarUser"></div>
+</aside>
+
+<div class="main">
+<div class="page">
+    <div class="topbar">
+        <div>
+            <h1>Пользователи</h1>
+            <p>Доступ к админ-панели: администраторы и наблюдатели</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+            Обновить
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+
+    <div class="section">
+        <div class="section-head-row">
+            <div class="section-head" style="margin-bottom:0;">
+                <h2>Пользователи</h2>
+                <span class="count-pill neutral" id="usersCountPill" style="display:none;"></span>
+            </div>
+            <button class="add-btn" onclick="openUserModal(null)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+                Добавить пользователя
+            </button>
+        </div>
+        <div id="usersContent"></div>
+    </div>
+</div>
+</div>
+
+<!-- User modal -->
+<div class="overlay" id="userOverlay">
+    <div class="modal">
+        <div id="userForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="userModalTitle">Новый пользователь</div>
+                    <div class="modal-subtitle">Доступ к админ-панели</div>
+                </div>
+                <div class="modal-header-active" id="userActiveToggleWrap" style="display:none;">
+                    <span class="toggle-label">Активен</span>
+                    <label class="switch">
+                        <input type="checkbox" id="userIsActive" checked>
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="userUsername">Логин <span class="req">*</span></label>
+                    <input type="text" id="userUsername" autocomplete="off" oninput="validateUserForm()">
+                </div>
+                <div class="form-group">
+                    <label for="userFullName">Имя <span class="opt">(необязательно)</span></label>
+                    <input type="text" id="userFullName">
+                </div>
+                <div class="form-group">
+                    <label for="userPassword" id="userPasswordLabel">Пароль <span class="req">*</span></label>
+                    <input type="password" id="userPassword" autocomplete="new-password" placeholder="Минимум 6 символов" oninput="validateUserForm()">
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Роль <span class="req">*</span></label>
+                    <select id="userRole">
+                        <option value="viewer">Наблюдатель — только просмотр</option>
+                        <option value="admin">Администратор — полный доступ</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-error" id="userError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeUserModal()">Отмена</button>
+                <button class="btn btn-save" id="userSaveBtn" disabled onclick="submitUser()">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="userSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Сохранено</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const GET_USERS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-users';
+    const SAVE_USER_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-user';
+    const TOGGLE_USER_URL = 'https://n8n.vseproi.de/webhook/tcs2-toggle-user-active';
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let users = [];
+    let currentUser = null;
+    let saving = false;
+
+    // ==========================================================
+    // Load data
+    // ==========================================================
+    async function loadData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const res = await authFetch(GET_USERS_URL, { method: 'GET' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            users = data.users || [];
+            renderUsers();
+        } catch (e) {
+            console.error(e);
+            showError('Не удалось загрузить пользователей. Попробуйте обновить страницу.');
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    // ==========================================================
+    // Render
+    // ==========================================================
+    function renderUsers() {
+        const pill = document.getElementById('usersCountPill');
+        pill.style.display = users.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = users.length;
+
+        const content = document.getElementById('usersContent');
+        if (users.length === 0) {
+            content.innerHTML = emptyStateHtml('Нет пользователей');
+            return;
+        }
+        content.innerHTML = `<div class="ref-list">${users.map(u => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${escapeHtml(u.full_name || u.username)}
+                        ${u.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : ''}
+                        ${u.is_active ? '' : '<span class="badge badge-inactive">Отключен</span>'}
+                    </div>
+                    <div class="ref-item-sub">@${escapeHtml(u.username)} · создан ${u.created_at}${u.last_login_at ? ' · вход ' + u.last_login_at : ' · ещё не входил'}</div>
+                </div>
+                <div class="ref-item-actions">
+                    <button class="action-btn secondary" onclick="openUserModal(${u.id})">Редактировать</button>
+                    <button class="action-btn secondary" onclick="toggleUser(${u.id})">${u.is_active ? 'Деактивировать' : 'Активировать'}</button>
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    // ==========================================================
+    // Modal
+    // ==========================================================
+    function openUserModal(userId) {
+        currentUser = userId ? users.find(u => u.id === userId) : null;
+
+        document.getElementById('userModalTitle').textContent = currentUser ? 'Редактирование пользователя' : 'Новый пользователь';
+        document.getElementById('userUsername').value = currentUser?.username || '';
+        document.getElementById('userFullName').value = currentUser?.full_name || '';
+        document.getElementById('userPassword').value = '';
+        document.getElementById('userRole').value = currentUser?.role || 'viewer';
+
+        const passwordLabel = document.getElementById('userPasswordLabel');
+        const passwordInput = document.getElementById('userPassword');
+        if (currentUser) {
+            passwordLabel.innerHTML = 'Пароль <span class="opt">(оставьте пустым, чтобы не менять)</span>';
+            passwordInput.placeholder = 'Новый пароль (необязательно)';
+        } else {
+            passwordLabel.innerHTML = 'Пароль <span class="req">*</span>';
+            passwordInput.placeholder = 'Минимум 6 символов';
+        }
+
+        const activeWrap = document.getElementById('userActiveToggleWrap');
+        if (currentUser) {
+            activeWrap.style.display = 'flex';
+            document.getElementById('userIsActive').checked = !!currentUser.is_active;
+        } else {
+            activeWrap.style.display = 'none';
+        }
+
+        document.getElementById('userError').classList.remove('show');
+        document.getElementById('userForm').style.display = 'block';
+        document.getElementById('userSuccess').classList.remove('show');
+
+        validateUserForm();
+        document.getElementById('userOverlay').classList.add('show');
+    }
+
+    function closeUserModal() {
+        if (saving) return;
+        document.getElementById('userOverlay').classList.remove('show');
+        currentUser = null;
+    }
+
+    function validateUserForm() {
+        const username = document.getElementById('userUsername').value.trim();
+        const password = document.getElementById('userPassword').value;
+        const ok = username && (currentUser || password.length >= 6) && (!password || password.length >= 6);
+        document.getElementById('userSaveBtn').disabled = !ok;
+    }
+
+    async function submitUser() {
+        if (saving) return;
+
+        const payload = {
+            id: currentUser?.id || null,
+            username: document.getElementById('userUsername').value.trim(),
+            password: document.getElementById('userPassword').value,
+            full_name: document.getElementById('userFullName').value.trim(),
+            role: document.getElementById('userRole').value,
+            is_active: currentUser ? document.getElementById('userIsActive').checked : true
+        };
+
+        const errorBox = document.getElementById('userError');
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById('userSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохранение...';
+
+        try {
+            const res = await authFetch(SAVE_USER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить пользователя');
+
+            document.getElementById('userForm').style.display = 'none';
+            document.getElementById('userSuccess').classList.add('show');
+            setTimeout(() => { closeUserModal(); loadData(); }, 1000);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Сохранить';
+            validateUserForm();
+        }
+    }
+
+    async function toggleUser(userId) {
+        const u = users.find(x => x.id === userId);
+        if (!u) return;
+        const action = u.is_active ? 'деактивировать' : 'активировать';
+        if (!confirm(`Точно ${action} пользователя «${u.full_name || u.username}»?`)) return;
+
+        hideError();
+        try {
+            const res = await authFetch(TOGGLE_USER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: userId })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось изменить статус пользователя');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || 'Ошибка при изменении статуса.');
+        }
+    }
+
+    // ==========================================================
+    // Overlay dismiss handlers
+    // ==========================================================
+    document.getElementById('userOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'userOverlay') closeUserModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeUserModal();
+    });
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    if (requireAuth()) {
+        renderNav('users.html');
+        loadData();
+    }
+</script>
+
+</body>
+</html>

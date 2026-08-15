@@ -15,6 +15,7 @@
         TCS2
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarUser"></div>
 </aside>
 
 <div class="main">
@@ -204,7 +205,7 @@
         hideError();
 
         try {
-            const res = await fetch(GET_REFERENCE_URL, { method: 'GET' });
+            const res = await authFetch(GET_REFERENCE_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
@@ -443,7 +444,7 @@
         saveBtn.textContent = 'Сохранение...';
 
         try {
-            const res = await fetch(SAVE_REFERENCE_URL, {
+            const res = await authFetch(SAVE_REFERENCE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -469,7 +470,7 @@
     async function deleteReferenceItem(entity, id) {
         hideError();
         try {
-            const res = await fetch(DELETE_REFERENCE_URL, {
+            const res = await authFetch(DELETE_REFERENCE_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ entity, id })
@@ -502,8 +503,10 @@
     // ==========================================================
     // Init
     // ==========================================================
-    renderNav('references.html');
-    loadData();
+    if (requireAuth()) {
+        renderNav('references.html');
+        loadData();
+    }
 </script>
 
 </body>

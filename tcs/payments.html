@@ -15,6 +15,7 @@
         TCS2
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarUser"></div>
 </aside>
 
 <div class="main">
@@ -117,7 +118,7 @@
         hideError();
 
         try {
-            const res = await fetch(GET_PAYMENT_DATA_URL, { method: 'GET' });
+            const res = await authFetch(GET_PAYMENT_DATA_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
@@ -234,7 +235,7 @@
         if (!confirm('Отменить эту транзакцию? Смены снова станут доступны для оплаты.')) return;
         hideError();
         try {
-            const res = await fetch(CANCEL_TRANSACTION_URL, {
+            const res = await authFetch(CANCEL_TRANSACTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ transaction_id: id })
@@ -266,7 +267,7 @@
         document.getElementById('txOverlay').classList.add('show');
 
         try {
-            const res = await fetch(`${GET_UNPAID_SESSIONS_URL}?employee_id=${employeeId}`, { method: 'GET' });
+            const res = await authFetch(`${GET_UNPAID_SESSIONS_URL}?employee_id=${employeeId}`, { method: 'GET' });
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки смен');
             txSessions = data.sessions || [];
@@ -343,7 +344,7 @@
         saveBtn.textContent = 'Отправка...';
 
         try {
-            const res = await fetch(CREATE_TRANSACTION_URL, {
+            const res = await authFetch(CREATE_TRANSACTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ employee_id: txEmployee.id, session_ids: sessionIds, amount })
@@ -379,8 +380,10 @@
     // ==========================================================
     // Init
     // ==========================================================
-    renderNav('payments.html');
-    loadData();
+    if (requireAuth()) {
+        renderNav('payments.html');
+        loadData();
+    }
 </script>
 
 </body>

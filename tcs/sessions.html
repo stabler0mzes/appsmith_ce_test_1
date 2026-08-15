@@ -15,6 +15,7 @@
         TCS2
     </div>
     <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer" id="sidebarUser"></div>
 </aside>
 
 <div class="main">
@@ -218,8 +219,8 @@
         try {
             const query = buildQuery();
             const [sessionsRes, projectsRes] = await Promise.all([
-                fetch(GET_SESSIONS_URL + (query ? '?' + query : ''), { method: 'GET' }),
-                fetch(GET_PROJECTS_URL, { method: 'GET' })
+                authFetch(GET_SESSIONS_URL + (query ? '?' + query : ''), { method: 'GET' }),
+                authFetch(GET_PROJECTS_URL, { method: 'GET' })
             ]);
             if (!sessionsRes.ok) throw new Error('HTTP ' + sessionsRes.status);
             if (!projectsRes.ok) throw new Error('HTTP ' + projectsRes.status);
@@ -426,7 +427,7 @@
         saveBtn.textContent = 'Сохранение...';
 
         try {
-            const res = await fetch(UPDATE_SESSION_URL, {
+            const res = await authFetch(UPDATE_SESSION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -457,7 +458,7 @@
 
         saving = true;
         try {
-            const res = await fetch(FORCE_END_URL, {
+            const res = await authFetch(FORCE_END_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: currentSession.id })
@@ -486,7 +487,7 @@
         document.getElementById('mediaOverlay').classList.add('show');
 
         try {
-            const res = await fetch(GET_MEDIA_URL + '?session_id=' + sessionId);
+            const res = await authFetch(GET_MEDIA_URL + '?session_id=' + sessionId);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки медиа');
 
@@ -526,8 +527,10 @@
     // ==========================================================
     // Init
     // ==========================================================
-    renderNav('sessions.html');
-    loadData();
+    if (requireAuth()) {
+        renderNav('sessions.html');
+        loadData();
+    }
 </script>
 
 </body>
