@@ -179,7 +179,7 @@
     }
 
     function money(n) {
-        return (n == null ? 0 : Number(n)).toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₴';
+        return (n == null ? 0 : Number(n)).toLocaleString('uk-UA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' ₴';
     }
 
     function hours(n) {
