@@ -285,12 +285,20 @@
 
         document.getElementById('statsRow').innerHTML = `
             <div class="stat-card revenue-card">
-                <div class="stat-label">Начислено всего</div>
-                <div class="stat-value">${money(s.total_amount)}</div>
+                <div class="revenue-header">
+                    <div class="stat-label">Начислено всего</div>
+                    <div class="stat-value">${money(s.total_amount)}</div>
+                </div>
                 <div class="revenue-bar"><div class="revenue-bar-paid" style="width:${paidPct}%"></div></div>
-                <div class="revenue-legend">
-                    <span class="revenue-legend-item paid"><i></i>Оплачено ${money(s.paid_amount)}</span>
-                    <span class="revenue-legend-item unpaid"><i></i>Не оплачено ${money(s.unpaid_amount)}</span>
+                <div class="revenue-split">
+                    <div class="revenue-split-item">
+                        <div class="revenue-split-label">Оплачено</div>
+                        <div class="revenue-split-value">${money(s.paid_amount)}</div>
+                    </div>
+                    <div class="revenue-split-item unpaid">
+                        <div class="revenue-split-label">Не оплачено</div>
+                        <div class="revenue-split-value">${money(s.unpaid_amount)}</div>
+                    </div>
                 </div>
             </div>
             <div class="stat-card">
