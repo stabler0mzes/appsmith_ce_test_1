@@ -94,9 +94,12 @@ function renderSidebarUser() {
     if (!user) { el.innerHTML = ''; return; }
     const label = user.full_name || user.username || '?';
     const ini = label.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+    const avatar = user.avatar_url
+        ? `<img class="sidebar-user-avatar" src="${escapeHtml(user.avatar_url)}" alt="">`
+        : `<div class="sidebar-user-avatar">${escapeHtml(ini)}</div>`;
     el.innerHTML = `
         <div class="sidebar-user-info">
-            <div class="sidebar-user-avatar">${escapeHtml(ini)}</div>
+            ${avatar}
             <div class="sidebar-user-text">
                 <div class="sidebar-user-name">${escapeHtml(label)}</div>
                 <div class="sidebar-user-role">${user.role === 'admin' ? 'Администратор' : 'Наблюдатель'}</div>
