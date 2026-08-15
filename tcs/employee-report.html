@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мой отчёт</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="report-body">
+
+<div class="report-page">
+    <div class="report-header" id="reportHeader">
+        <div class="report-header-avatar" id="reportAvatar">?</div>
+        <div>
+            <div class="report-header-name" id="reportName">Мой отчёт</div>
+            <div class="report-header-sub">Отработанные смены и начисления</div>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()" style="margin-left:auto;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+
+    <div id="reportBody"></div>
+</div>
+
+<!-- Media preview modal -->
+<div class="overlay" id="mediaOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title">Фото/видео отчёты</div>
+                <div class="modal-subtitle" id="mediaSubtitle"></div>
+            </div>
+        </div>
+        <div class="media-grid" id="mediaGrid"></div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeMediaModal()">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const GET_REPORT_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-report';
+    const GET_REPORT_MEDIA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-report-media';
+
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const initData = tg ? tg.initData : '';
+
+    if (tg) {
+        tg.ready();
+        tg.expand();
+    }
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let sessions = [];
+    let summary = { total_sessions: 0, total_hours: 0, total_amount: 0, paid_amount: 0, unpaid_amount: 0 };
+    let projects = [];
+
+    // ==========================================================
+    // Helpers
+    // ==========================================================
+    function money(n) {
+        return Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' грн';
+    }
+
+    function hours(n) {
+        return (n == null ? 0 : Number(n)).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // ==========================================================
+    // Load data
+    // ==========================================================
+    async function loadData() {
+        if (!initData) {
+            document.getElementById('reportBody').innerHTML = '';
+            showError('Эта страница открывается только через Telegram — используйте кнопку меню в боте.');
+            return;
+        }
+
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const payload = {
+                init_data: initData,
+                date_from: getFilterValue('filterDateFrom'),
+                date_to: getFilterValue('filterDateTo'),
+                project_id: getFilterValue('filterProject'),
+                is_paid: getFilterValue('filterPaid')
+            };
+            const res = await fetch(GET_REPORT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+
+            sessions = data.sessions || [];
+            summary = data.summary || summary;
+            projects = data.projects || [];
+
+            renderHeader(data);
+            renderFiltersIfNeeded();
+            renderBody();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || 'Не удалось загрузить отчёт. Попробуйте обновить страницу.');
+            document.getElementById('reportBody').innerHTML = '';
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    function getFilterValue(id) {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
+    }
+
+    function renderHeader(data) {
+        document.getElementById('reportName').textContent = data.employee_name || 'Мой отчёт';
+        const avatarEl = document.getElementById('reportAvatar');
+        if (data.employee_avatar) {
+            avatarEl.outerHTML = `<img class="report-header-avatar" id="reportAvatar" src="${escapeHtml(data.employee_avatar)}" alt="">`;
+        } else {
+            const ini = (data.employee_name || '?').trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+            document.getElementById('reportAvatar').textContent = ini;
+        }
+    }
+
+    // ==========================================================
+    // Filters (rendered once, values preserved across refreshes)
+    // ==========================================================
+    let filtersRendered = false;
+    function renderFiltersIfNeeded() {
+        if (filtersRendered) {
+            populateProjectOptions();
+            return;
+        }
+        filtersRendered = true;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'filters-row';
+        wrap.id = 'filtersRow';
+        wrap.innerHTML = `
+            <div class="filter-group">
+                <label for="filterDateFrom">Дата от</label>
+                <input type="date" id="filterDateFrom" onchange="loadData()">
+            </div>
+            <div class="filter-group">
+                <label for="filterDateTo">Дата до</label>
+                <input type="date" id="filterDateTo" onchange="loadData()">
+            </div>
+            <div class="filter-group">
+                <label for="filterProject">Объект</label>
+                <select id="filterProject" onchange="loadData()">
+                    <option value="">Все объекты</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterPaid">Оплата</label>
+                <select id="filterPaid" onchange="loadData()">
+                    <option value="">Все</option>
+                    <option value="true">Оплачено</option>
+                    <option value="false">Не оплачено</option>
+                </select>
+            </div>
+            <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
+        `;
+        document.getElementById('reportBody').before(wrap);
+        populateProjectOptions();
+    }
+
+    function populateProjectOptions() {
+        const projSelect = document.getElementById('filterProject');
+        if (!projSelect) return;
+        const current = projSelect.value;
+        projSelect.innerHTML = '<option value="">Все объекты</option>' + projects.map(p =>
+            `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
+        ).join('');
+        projSelect.value = current;
+    }
+
+    function resetFilters() {
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        document.getElementById('filterProject').value = '';
+        document.getElementById('filterPaid').value = '';
+        loadData();
+    }
+
+    // ==========================================================
+    // Body: revenue card + session list
+    // ==========================================================
+    function renderBody() {
+        const total = Number(summary.total_amount) || 0;
+        const paid = Number(summary.paid_amount) || 0;
+        const paidPct = total > 0 ? Math.min(100, (paid / total) * 100) : 0;
+
+        const revenueCard = `
+            <div class="stat-card revenue-card" style="margin-bottom:16px;">
+                <div class="revenue-header">
+                    <div class="stat-label">Начислено всего</div>
+                    <div class="stat-value">${money(summary.total_amount)}</div>
+                </div>
+                <div class="revenue-bar"><div class="revenue-bar-paid" style="width:${paidPct}%"></div></div>
+                <div class="revenue-split">
+                    <div class="revenue-split-item">
+                        <div class="revenue-split-label">Оплачено</div>
+                        <div class="revenue-split-value">${money(summary.paid_amount)}</div>
+                    </div>
+                    <div class="revenue-split-item unpaid">
+                        <div class="revenue-split-label">Не оплачено</div>
+                        <div class="revenue-split-value">${money(summary.unpaid_amount)}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-row" style="margin-bottom:16px;">
+                <div class="stat-card">
+                    <div class="stat-label">Смен</div>
+                    <div class="stat-value">${summary.total_sessions}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Часов</div>
+                    <div class="stat-value">${hours(summary.total_hours)}</div>
+                </div>
+            </div>`;
+
+        const list = sessions.length === 0
+            ? emptyStateHtml('Нет смен по заданным фильтрам')
+            : `<div class="session-list">${sessions.map(reportRowHtml).join('')}</div>`;
+
+        document.getElementById('reportBody').innerHTML = revenueCard + list;
+    }
+
+    function reportRowHtml(s) {
+        const timeRange = `${s.start_time || '—'} – ${s.end_time || 'активна'}`;
+        return `
+            <div class="session-row${s.is_paid ? ' paid' : ''}" style="cursor:default;">
+                <div class="session-project" style="flex:1 1 140px;">${escapeHtml(s.project_name)}</div>
+                <div class="session-datetime">
+                    <div class="session-date">${s.session_date}</div>
+                    <div class="session-time">${timeRange}</div>
+                </div>
+                <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
+                <div class="session-amount${s.is_paid ? ' paid' : ''}">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
+                <div class="session-icons">
+                    ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
+                    ${s.media_count > 0 ? `<button class="session-icon-media" onclick="openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
+                </div>
+            </div>`;
+    }
+
+    // ==========================================================
+    // Media modal
+    // ==========================================================
+    async function openMediaModal(sessionId) {
+        const s = sessions.find(x => x.id === sessionId);
+        document.getElementById('mediaSubtitle').textContent = s ? s.project_name + ' — ' + s.session_date : '';
+        document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Загрузка...');
+        document.getElementById('mediaOverlay').classList.add('show');
+
+        try {
+            const res = await fetch(GET_REPORT_MEDIA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: initData, session_id: sessionId })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки медиа');
+
+            const media = data.media || [];
+            if (media.length === 0) {
+                document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Нет файлов');
+                return;
+            }
+            document.getElementById('mediaGrid').innerHTML = media.map(m =>
+                m.file_type === 'video'
+                    ? `<video src="${escapeHtml(m.file_path)}" controls></video>`
+                    : `<a href="${escapeHtml(m.file_path)}" target="_blank"><img src="${escapeHtml(m.file_path)}" alt=""></a>`
+            ).join('');
+        } catch (e) {
+            console.error(e);
+            document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Не удалось загрузить файлы');
+        }
+    }
+
+    function closeMediaModal() {
+        document.getElementById('mediaOverlay').classList.remove('show');
+    }
+
+    document.getElementById('mediaOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'mediaOverlay') closeMediaModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMediaModal();
+    });
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    loadData();
+</script>
+
+</body>
+</html>
