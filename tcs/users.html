@@ -90,6 +90,12 @@
                         <option value="admin">Администратор — полный доступ</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="userEmployee">Привязанный сотрудник <span class="opt">(для Telegram-уведомлений)</span></label>
+                    <select id="userEmployee">
+                        <option value="">— Не привязан —</option>
+                    </select>
+                </div>
             </div>
             <div class="modal-error" id="userError"></div>
             <div class="modal-footer">
@@ -116,6 +122,7 @@
     // State
     // ==========================================================
     let users = [];
+    let employees = [];
     let currentUser = null;
     let saving = false;
 
@@ -135,6 +142,7 @@
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
 
             users = data.users || [];
+            employees = data.employees || [];
             renderUsers();
         } catch (e) {
             console.error(e);
@@ -166,7 +174,7 @@
                         ${u.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : ''}
                         ${u.is_active ? '' : '<span class="badge badge-inactive">Отключен</span>'}
                     </div>
-                    <div class="ref-item-sub">@${escapeHtml(u.username)} · создан ${u.created_at}${u.last_login_at ? ' · вход ' + u.last_login_at : ' · ещё не входил'}</div>
+                    <div class="ref-item-sub">@${escapeHtml(u.username)} · создан ${u.created_at}${u.last_login_at ? ' · вход ' + u.last_login_at : ' · ещё не входил'}${u.employee_name ? ' · привязан: ' + escapeHtml(u.employee_name) + (u.employee_has_telegram ? '' : ' (нет Telegram)') : ''}</div>
                 </div>
                 <div class="ref-item-actions">
                     <button class="action-btn secondary" onclick="openUserModal(${u.id})">Редактировать</button>
@@ -187,6 +195,12 @@
         document.getElementById('userPassword').value = '';
         document.getElementById('userPasswordConfirm').value = '';
         document.getElementById('userRole').value = currentUser?.role || 'viewer';
+
+        const employeeSelect = document.getElementById('userEmployee');
+        employeeSelect.innerHTML = '<option value="">— Не привязан —</option>' + employees.map(e =>
+            `<option value="${e.id}">${escapeHtml(e.full_name)}${e.has_telegram ? '' : ' (нет Telegram)'}</option>`
+        ).join('');
+        employeeSelect.value = currentUser?.employee_id || '';
 
         const passwordLabel = document.getElementById('userPasswordLabel');
         const passwordInput = document.getElementById('userPassword');
@@ -262,7 +276,8 @@
             password: document.getElementById('userPassword').value,
             full_name: document.getElementById('userFullName').value.trim(),
             role: document.getElementById('userRole').value,
-            is_active: currentUser ? document.getElementById('userIsActive').checked : true
+            is_active: currentUser ? document.getElementById('userIsActive').checked : true,
+            employee_id: document.getElementById('userEmployee').value || null
         };
 
         const errorBox = document.getElementById('userError');
