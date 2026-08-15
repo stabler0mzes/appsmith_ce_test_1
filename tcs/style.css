@@ -469,6 +469,7 @@ body {
     font-weight: 700;
     color: var(--text);
 }
+.revenue-split-item.unpaid { text-align: right; }
 .revenue-split-item.unpaid .revenue-split-value { color: var(--red); }
 
 /* Filters */
