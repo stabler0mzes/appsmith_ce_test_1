@@ -419,9 +419,9 @@ body {
     margin-bottom: 6px;
 }
 .stat-card .stat-value {
-    font-size: 20px;
+    font-size: 36px;
     font-weight: 700;
-    color: var(--text);
+    color: #5f646f;
 }
 .stat-card.unpaid {
     background: var(--red-bg);
