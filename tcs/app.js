@@ -62,6 +62,28 @@ async function logout() {
 }
 
 // ==========================================================
+// Collapsible filters row (mobile)
+// ==========================================================
+function toggleFiltersRow(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) row.classList.toggle('expanded');
+}
+
+// Call after populating/changing filter values so the mobile badge reflects active filter count.
+function updateFiltersBadge(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const badge = row.querySelector('.filters-badge');
+    if (!badge) return;
+    let count = 0;
+    row.querySelectorAll('.filters-content select, .filters-content input').forEach(el => {
+        if (el.value) count++;
+    });
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+}
+
+// ==========================================================
 // Shared navigation
 // ==========================================================
 // Add an entry here whenever a new page is added to the admin site.

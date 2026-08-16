@@ -155,29 +155,37 @@
         wrap.className = 'filters-row';
         wrap.id = 'filtersRow';
         wrap.innerHTML = `
-            <div class="filter-group">
-                <label for="filterDateFrom">Дата от</label>
-                <input type="date" id="filterDateFrom" onchange="loadData()">
+            <button type="button" class="filters-toggle" onclick="toggleFiltersRow('filtersRow')">
+                <svg class="filters-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>
+                <span>Фильтры</span>
+                <span class="filters-badge">0</span>
+                <svg class="filters-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <div class="filters-content">
+                <div class="filter-group">
+                    <label for="filterDateFrom">Дата от</label>
+                    <input type="date" id="filterDateFrom" onchange="loadData()">
+                </div>
+                <div class="filter-group">
+                    <label for="filterDateTo">Дата до</label>
+                    <input type="date" id="filterDateTo" onchange="loadData()">
+                </div>
+                <div class="filter-group">
+                    <label for="filterProject">Объект</label>
+                    <select id="filterProject" onchange="loadData()">
+                        <option value="">Все объекты</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterPaid">Оплата</label>
+                    <select id="filterPaid" onchange="loadData()">
+                        <option value="">Все</option>
+                        <option value="true">Оплачено</option>
+                        <option value="false">Не оплачено</option>
+                    </select>
+                </div>
+                <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
             </div>
-            <div class="filter-group">
-                <label for="filterDateTo">Дата до</label>
-                <input type="date" id="filterDateTo" onchange="loadData()">
-            </div>
-            <div class="filter-group">
-                <label for="filterProject">Объект</label>
-                <select id="filterProject" onchange="loadData()">
-                    <option value="">Все объекты</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="filterPaid">Оплата</label>
-                <select id="filterPaid" onchange="loadData()">
-                    <option value="">Все</option>
-                    <option value="true">Оплачено</option>
-                    <option value="false">Не оплачено</option>
-                </select>
-            </div>
-            <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
         `;
         document.getElementById('reportBody').before(wrap);
         populateProjectOptions();
@@ -191,6 +199,8 @@
             `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
         ).join('');
         projSelect.value = current;
+
+        updateFiltersBadge('filtersRow');
     }
 
     function resetFilters() {
