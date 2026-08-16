@@ -684,7 +684,7 @@ body.report-body {
     }
     .filters-chevron { margin-left: auto; color: var(--text-faint); transition: transform 0.15s ease; flex-shrink: 0; }
     .filters-row.expanded .filters-chevron { transform: rotate(180deg); }
-    .filters-content { display: none; padding-top: 0; border-top: 1px solid var(--border); }
+    .filters-content { display: none; padding-top: 14px; border-top: 1px solid var(--border); }
     .filters-row.expanded .filters-content { display: flex; }
     .filter-group { min-width: 0; flex: 1 1 140px; }
 }
