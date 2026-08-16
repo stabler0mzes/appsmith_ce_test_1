@@ -667,7 +667,8 @@ body.report-body {
         cursor: pointer;
         text-align: left;
     }
-    .filters-toggle .filters-icon { color: var(--text-muted); flex-shrink: 0; }
+    .filters-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .filters-toggle .filters-icon { color: var(--text-muted); }
     .filters-badge {
         display: none;
         align-items: center;
