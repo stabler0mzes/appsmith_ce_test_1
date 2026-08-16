@@ -689,32 +689,6 @@ body.report-body {
     .filter-group { min-width: 0; flex: 1 1 140px; }
 }
 
-@media (max-width: 860px) {
-    .session-row {
-        flex-direction: column;
-        align-items: stretch;
-        row-gap: 8px;
-    }
-    .session-row-top, .session-row-bottom {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        width: 100%;
-    }
-    .session-top-right, .session-bottom-right {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-shrink: 0;
-    }
-    .session-employee { min-width: 0; flex: 1 1 auto; }
-    .session-project { min-width: 0; max-width: 140px; flex: none; text-align: right; }
-    .session-datetime { min-width: 0; text-align: left; }
-    .session-bottom-right { align-items: baseline; }
-    .session-hours, .session-amount { min-width: 0; }
-}
-
 /* Session rows */
 .session-list {
     display: flex;
@@ -739,6 +713,32 @@ body.report-body {
 
 .session-row-top, .session-row-bottom, .session-top-right, .session-bottom-right {
     display: contents;
+}
+
+@media (max-width: 860px) {
+    .session-row {
+        flex-direction: column;
+        align-items: stretch;
+        row-gap: 8px;
+    }
+    .session-row-top, .session-row-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+    }
+    .session-top-right, .session-bottom-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .session-employee { min-width: 0; flex: 1 1 auto; }
+    .session-project { min-width: 0; max-width: 140px; flex: none; text-align: right; }
+    .session-datetime { min-width: 0; text-align: left; }
+    .session-bottom-right { align-items: baseline; }
+    .session-hours, .session-amount { min-width: 0; }
 }
 
 .session-employee {
