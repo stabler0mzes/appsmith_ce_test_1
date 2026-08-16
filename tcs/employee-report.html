@@ -259,16 +259,24 @@
         const timeRange = `${s.start_time || '—'} – ${s.end_time || 'активна'}`;
         return `
             <div class="session-row${s.is_paid ? ' paid' : ''}" style="cursor:default;">
-                <div class="session-project" style="flex:1 1 140px;">${escapeHtml(s.project_name)}</div>
-                <div class="session-datetime">
-                    <div class="session-date">${s.session_date}</div>
-                    <div class="session-time">${timeRange}</div>
+                <div class="session-row-top">
+                    <div class="session-top-right">
+                        <div class="session-icons">
+                            ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
+                            ${s.media_count > 0 ? `<button class="session-icon-media" onclick="openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
+                        </div>
+                        <div class="session-project" style="flex:1 1 140px;">${escapeHtml(s.project_name)}</div>
+                    </div>
                 </div>
-                <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
-                <div class="session-amount${s.is_paid ? ' paid' : ''}">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
-                <div class="session-icons">
-                    ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
-                    ${s.media_count > 0 ? `<button class="session-icon-media" onclick="openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
+                <div class="session-row-bottom">
+                    <div class="session-datetime">
+                        <div class="session-date">${s.session_date}</div>
+                        <div class="session-time">${timeRange}</div>
+                    </div>
+                    <div class="session-bottom-right">
+                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
+                        <div class="session-amount${s.is_paid ? ' paid' : ''}">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
+                    </div>
                 </div>
             </div>`;
     }
