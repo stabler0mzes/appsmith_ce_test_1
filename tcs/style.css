@@ -533,6 +533,16 @@ body.report-body {
     margin-bottom: 16px;
 }
 
+.debt-banner {
+    background: var(--orange-bg);
+    border: 1px solid #f0dba8;
+    color: var(--orange);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
 /* Summary stats */
 .stats-row {
     display: grid;
@@ -1199,6 +1209,24 @@ input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus,
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 2px;
+}
+.debt-amount {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--red);
+    margin-top: -6px;
+}
+.card-actions-row {
+    display: flex;
+    gap: 8px;
+}
+.card-actions-row .action-btn {
+    flex: 1;
+    margin-top: 0;
+}
+.card-actions-row .action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Payment transaction modal: same principle — parent overlay scrolls, not the modal itself */

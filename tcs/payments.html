@@ -25,10 +25,13 @@
             <h1>Оплата</h1>
             <p>Начисление и подтверждение оплаты отработанных часов через Telegram</p>
         </div>
-        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-            Обновить
-        </button>
+        <div style="display:flex; gap:8px;">
+            <button class="action-btn secondary" style="margin-top:0;" onclick="openAdvanceModal()">Выдать аванс</button>
+            <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+                Обновить
+            </button>
+        </div>
     </div>
 
     <div id="errorBox" class="error-box" style="display:none;"></div>
@@ -88,6 +91,49 @@
     </div>
 </div>
 
+<!-- New advance modal -->
+<div class="overlay" id="advanceOverlay">
+    <div class="modal">
+        <div id="advanceForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="advanceModalTitle">Выдать аванс</div>
+                    <div class="modal-subtitle" id="advanceModalSubtitle">Сумма без привязки к рабочим сменам — образует долг на балансе сотрудника</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="advanceTypeSelect">Операция</label>
+                    <select id="advanceTypeSelect" onchange="onAdvanceTypeChange()">
+                        <option value="advance">Выдать аванс (+ к долгу)</option>
+                        <option value="repayment">Погасить часть долга (− от долга)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="advanceEmployeeGroup">
+                    <label for="advanceEmployeeSelect">Сотрудник <span class="req">*</span></label>
+                    <select id="advanceEmployeeSelect" onchange="onAdvanceEmployeeChange()">
+                        <option value="">Загрузка...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="advanceAmount" id="advanceAmountLabel">Сумма аванса, грн <span class="req">*</span></label>
+                    <input type="text" id="advanceAmount" placeholder="0" oninput="validateAdvanceForm()">
+                </div>
+            </div>
+            <div class="modal-error" id="advanceError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeAdvanceModal()">Отмена</button>
+                <button class="btn btn-save" id="advanceSaveBtn" disabled onclick="submitAdvance()">Отправить в Telegram</button>
+            </div>
+        </div>
+        <div class="modal-success" id="advanceSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Отправлено</div>
+            <div class="sub">Сотрудник получит уведомление в Telegram с кнопкой подтверждения</div>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================================
     // Config
@@ -96,17 +142,21 @@
     const GET_UNPAID_SESSIONS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-unpaid-sessions';
     const CREATE_TRANSACTION_URL = 'https://n8n.vseproi.de/webhook/tcs2-create-transaction';
     const CANCEL_TRANSACTION_URL = 'https://n8n.vseproi.de/webhook/tcs2-cancel-transaction';
+    const ACTIVATION_QUEUE_URL = 'https://n8n.vseproi.de/webhook/tcs2-activation-queue';
 
     // ==========================================================
     // State
     // ==========================================================
     let employees = [];
     let transactions = [];
-    let summary = { total_available: 0, total_pending: 0 };
+    let summary = { total_available: 0, total_pending: 0, total_debt: 0 };
     let txEmployee = null;
     let txSessions = [];
     let txAmountManuallyEdited = false;
     let saving = false;
+    let activeEmployees = [];
+    let advanceEmployee = null;
+    let advanceSaving = false;
 
     // ==========================================================
     // Load data
@@ -125,7 +175,7 @@
 
             employees = data.employees || [];
             transactions = data.transactions || [];
-            summary = data.summary || { total_available: 0, total_pending: 0 };
+            summary = data.summary || { total_available: 0, total_pending: 0, total_debt: 0 };
 
             renderStats();
             renderEmployees();
@@ -156,6 +206,10 @@
                 <div class="stat-label">Ожидает подтверждения</div>
                 <div class="stat-value">${money(summary.total_pending)}</div>
             </div>
+            <div class="stat-card${summary.total_debt > 0 ? ' unpaid' : ''}">
+                <div class="stat-label">Долг по авансам</div>
+                <div class="stat-value">${money(summary.total_debt)}</div>
+            </div>
         `;
     }
 
@@ -169,7 +223,7 @@
 
         const content = document.getElementById('employeesContent');
         if (employees.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет сотрудников с неоплаченными сменами');
+            content.innerHTML = emptyStateHtml('Нет сотрудников с неоплаченными сменами или долгом по авансам');
             return;
         }
         content.innerHTML = `<div class="grid">${employees.map(e => `
@@ -178,11 +232,16 @@
                     ${avatarHtml(e, 'avatar')}
                     <div class="card-head-text">
                         <div class="card-name">${escapeHtml(e.full_name)}</div>
-                        <div class="card-username">${e.unpaid_count} ${pluralSessions(e.unpaid_count)}</div>
+                        <div class="card-username">${e.unpaid_count > 0 ? e.unpaid_count + ' ' + pluralSessions(e.unpaid_count) : 'нет неоплаченных смен'}</div>
                     </div>
                 </div>
                 <div class="balance-amount">${money(e.unpaid_amount)}</div>
-                <button class="action-btn" onclick="openTxModal(${e.id})">Создать транзакцию</button>
+                ${e.balance > 0 ? `<div class="debt-amount">Долг: ${money(e.balance)}</div>` : ''}
+                <div class="card-actions-row">
+                    <button class="action-btn" onclick="openTxModal(${e.id})" ${e.unpaid_count === 0 ? 'disabled' : ''}>Создать транзакцию</button>
+                    <button class="action-btn secondary" onclick="openAdvanceModal(${e.id}, 'advance')">Аванс</button>
+                </div>
+                ${e.balance > 0 ? `<button class="action-btn secondary" onclick="openAdvanceModal(${e.id}, 'repayment')">Погасить долг</button>` : ''}
             </div>`).join('')}</div>`;
     }
 
@@ -202,6 +261,10 @@
         return '<span class="badge badge-inactive">Отменена</span>';
     }
 
+    function typeBadge(type) {
+        return type === 'advance' ? '<span class="badge badge-admin">Аванс</span>' : '';
+    }
+
     function renderTransactions() {
         const pill = document.getElementById('transactionsCountPill');
         pill.style.display = transactions.length > 0 ? 'inline-flex' : 'none';
@@ -217,6 +280,7 @@
                 <div class="ref-item-main">
                     <div class="ref-item-title">
                         ${escapeHtml(t.full_name)} — ${money(t.amount)}
+                        ${typeBadge(t.type)}
                         ${statusBadge(t.status)}
                     </div>
                     <div class="tx-item-dates">
@@ -368,13 +432,115 @@
     }
 
     // ==========================================================
+    // New advance modal
+    // ==========================================================
+    async function openAdvanceModal(employeeId, type) {
+        advanceEmployee = employeeId || null;
+        document.getElementById('advanceAmount').value = '';
+        document.getElementById('advanceError').classList.remove('show');
+        document.getElementById('advanceForm').style.display = 'block';
+        document.getElementById('advanceSuccess').classList.remove('show');
+        document.getElementById('advanceSaveBtn').disabled = true;
+        document.getElementById('advanceTypeSelect').value = type || 'advance';
+        onAdvanceTypeChange();
+        document.getElementById('advanceOverlay').classList.add('show');
+
+        const select = document.getElementById('advanceEmployeeSelect');
+        select.innerHTML = '<option value="">Загрузка...</option>';
+
+        try {
+            const res = await authFetch(ACTIVATION_QUEUE_URL, { method: 'GET' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки сотрудников');
+            activeEmployees = data.active_employees || [];
+
+            select.innerHTML = '<option value="">Выберите сотрудника</option>' + activeEmployees.map(e =>
+                `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`
+            ).join('');
+            if (advanceEmployee) select.value = advanceEmployee;
+        } catch (e) {
+            console.error(e);
+            select.innerHTML = '<option value="">Не удалось загрузить список</option>';
+        }
+        validateAdvanceForm();
+    }
+
+    function onAdvanceTypeChange() {
+        const type = document.getElementById('advanceTypeSelect').value;
+        if (type === 'repayment') {
+            document.getElementById('advanceModalTitle').textContent = 'Погасить долг';
+            document.getElementById('advanceModalSubtitle').textContent = 'Уменьшает баланс (долг) сотрудника — деньги ему не выплачиваются';
+            document.getElementById('advanceAmountLabel').innerHTML = 'Сумма погашения, грн <span class="req">*</span>';
+        } else {
+            document.getElementById('advanceModalTitle').textContent = 'Выдать аванс';
+            document.getElementById('advanceModalSubtitle').textContent = 'Сумма без привязки к рабочим сменам — образует долг на балансе сотрудника';
+            document.getElementById('advanceAmountLabel').innerHTML = 'Сумма аванса, грн <span class="req">*</span>';
+        }
+    }
+
+    function onAdvanceEmployeeChange() {
+        advanceEmployee = document.getElementById('advanceEmployeeSelect').value || null;
+        validateAdvanceForm();
+    }
+
+    function validateAdvanceForm() {
+        const amount = Number(document.getElementById('advanceAmount').value);
+        document.getElementById('advanceSaveBtn').disabled = !(advanceEmployee && amount > 0);
+    }
+
+    function closeAdvanceModal() {
+        if (advanceSaving) return;
+        document.getElementById('advanceOverlay').classList.remove('show');
+        advanceEmployee = null;
+    }
+
+    async function submitAdvance() {
+        if (advanceSaving || !advanceEmployee) return;
+        const amount = Number(document.getElementById('advanceAmount').value);
+        const type = document.getElementById('advanceTypeSelect').value;
+        const errorBox = document.getElementById('advanceError');
+        errorBox.classList.remove('show');
+
+        advanceSaving = true;
+        const saveBtn = document.getElementById('advanceSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Отправка...';
+
+        try {
+            const res = await authFetch(CREATE_TRANSACTION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employee_id: advanceEmployee, type, amount })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось выполнить операцию');
+
+            document.getElementById('advanceForm').style.display = 'none';
+            document.getElementById('advanceSuccess').classList.add('show');
+            setTimeout(() => { closeAdvanceModal(); loadData(); }, 1200);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при выполнении операции. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            advanceSaving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Отправить в Telegram';
+            validateAdvanceForm();
+        }
+    }
+
+    // ==========================================================
     // Overlay dismiss handlers
     // ==========================================================
     document.getElementById('txOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'txOverlay') closeTxModal();
     });
+    document.getElementById('advanceOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'advanceOverlay') closeAdvanceModal();
+    });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeTxModal();
+        if (e.key === 'Escape') { closeTxModal(); closeAdvanceModal(); }
     });
 
     // ==========================================================
