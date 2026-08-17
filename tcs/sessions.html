@@ -361,7 +361,10 @@
                     </div>
                     <div class="session-bottom-right">
                         <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
-                        <div class="session-amount${s.is_paid ? ' paid' : ''}">${s.calculated_salary != null ? money(s.calculated_salary) : '—'}</div>
+                        <div class="session-amount${s.is_paid ? ' paid' : ''}">
+                            ${s.calculated_salary != null ? money(s.calculated_salary) : '—'}
+                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} аванс</div>` : ''}
+                        </div>
                     </div>
                 </div>
             </div>`;

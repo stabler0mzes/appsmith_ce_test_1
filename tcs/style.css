@@ -786,6 +786,12 @@ body.report-body {
     font-weight: 700;
 }
 .session-amount.paid { color: var(--green); }
+.session-amount-note {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--orange);
+    margin-top: 1px;
+}
 
 .session-icons {
     display: flex;
