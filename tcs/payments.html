@@ -38,6 +38,14 @@
 
     <div class="stats-row" id="statsRow"></div>
 
+    <div class="section" id="requestsSection" style="display:none;">
+        <div class="section-head">
+            <h2>Запросы на транзакцию</h2>
+            <span class="count-pill neutral" id="requestsCountPill" style="display:none;"></span>
+        </div>
+        <div id="requestsContent"></div>
+    </div>
+
     <div class="section">
         <div class="section-head">
             <h2>Сотрудники с задолженностью</h2>
@@ -109,17 +117,21 @@
     const CREATE_TRANSACTION_URL = 'https://n8n.vseproi.de/webhook/tcs2-create-transaction';
     const CANCEL_TRANSACTION_URL = 'https://n8n.vseproi.de/webhook/tcs2-cancel-transaction';
     const ACTIVATION_QUEUE_URL = 'https://n8n.vseproi.de/webhook/tcs2-activation-queue';
+    const GET_PAYMENT_REQUESTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-payment-requests';
+    const DECLINE_PAYMENT_REQUEST_URL = 'https://n8n.vseproi.de/webhook/tcs2-decline-payment-request';
 
     // ==========================================================
     // State
     // ==========================================================
     let employees = [];
     let transactions = [];
+    let requests = [];
     let summary = { total_available: 0, total_pending: 0, total_debt: 0 };
     let activeEmployees = [];
     let txEmployeeId = null;
     let txSessions = [];
     let txAmountManuallyEdited = false;
+    let currentRequestId = null;
     let saving = false;
 
     // ==========================================================
@@ -132,7 +144,10 @@
         hideError();
 
         try {
-            const res = await authFetch(GET_PAYMENT_DATA_URL, { method: 'GET' });
+            const [res, reqRes] = await Promise.all([
+                authFetch(GET_PAYMENT_DATA_URL, { method: 'GET' }),
+                authFetch(GET_PAYMENT_REQUESTS_URL, { method: 'GET' })
+            ]);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
@@ -141,7 +156,13 @@
             transactions = data.transactions || [];
             summary = data.summary || { total_available: 0, total_pending: 0, total_debt: 0 };
 
+            if (reqRes.ok) {
+                const reqData = await reqRes.json();
+                if (reqData.success) requests = reqData.requests || [];
+            }
+
             renderStats();
+            renderRequests();
             renderEmployees();
             renderTransactions();
         } catch (e) {
@@ -210,6 +231,60 @@
         if (mod10 === 1 && mod100 !== 11) return 'смена';
         if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'смены';
         return 'смен';
+    }
+
+    // ==========================================================
+    // Payment requests
+    // ==========================================================
+    function renderRequests() {
+        const section = document.getElementById('requestsSection');
+        const pill = document.getElementById('requestsCountPill');
+        section.style.display = requests.length > 0 ? 'block' : 'none';
+        pill.style.display = requests.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = requests.length;
+
+        document.getElementById('requestsContent').innerHTML = `<div class="ref-list">${requests.map(r => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${escapeHtml(r.full_name)} — ${money(r.amount)}
+                    </div>
+                    <div class="tx-item-dates">
+                        Запрошено: ${r.created_at}
+                        ${r.comment ? ' · «' + escapeHtml(r.comment) + '»' : ''}
+                    </div>
+                </div>
+                <div class="ref-item-actions">
+                    <button class="action-btn" style="margin-top:0;" onclick="approveRequest(${r.id}, ${r.employee_id}, ${r.amount})">Одобрить</button>
+                    <button class="action-btn secondary" onclick="declineRequest(${r.id})">Отклонить</button>
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    async function approveRequest(requestId, employeeId, amount) {
+        await openTxModal(employeeId);
+        currentRequestId = requestId;
+        txAmountManuallyEdited = true;
+        document.getElementById('txAmount').value = Number(amount).toFixed(2);
+        validateTxForm();
+    }
+
+    async function declineRequest(id) {
+        if (!confirm('Отклонить этот запрос? Сотрудник получит уведомление в Telegram.')) return;
+        hideError();
+        try {
+            const res = await authFetch(DECLINE_PAYMENT_REQUEST_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ request_id: id })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отклонить запрос');
+            loadData();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || 'Ошибка при отклонении запроса.');
+        }
     }
 
     // ==========================================================
@@ -282,6 +357,7 @@
         txEmployeeId = employeeId || null;
         txSessions = [];
         txAmountManuallyEdited = false;
+        currentRequestId = null;
         document.getElementById('txAmount').value = '';
         document.getElementById('txAmountHint').textContent = '';
         document.getElementById('txAmountHint').classList.remove('error');
@@ -433,11 +509,12 @@
             const res = await authFetch(CREATE_TRANSACTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employee_id: txEmployeeId, session_ids: sessionIds, amount })
+                body: JSON.stringify({ employee_id: txEmployeeId, session_ids: sessionIds, amount, request_id: currentRequestId || undefined })
             });
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось создать транзакцию');
 
+            currentRequestId = null;
             document.getElementById('txForm').style.display = 'none';
             document.getElementById('txSuccess').classList.add('show');
             setTimeout(() => { closeTxModal(); loadData(); }, 1200);

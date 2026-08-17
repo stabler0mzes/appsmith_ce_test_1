@@ -25,7 +25,44 @@
 
     <div id="debtBanner" class="debt-banner" style="display:none;"></div>
 
+    <div id="requestSection" style="margin-bottom:16px;"></div>
+
     <div id="reportBody"></div>
+</div>
+
+<!-- Request payment modal -->
+<div class="overlay" id="requestOverlay">
+    <div class="modal">
+        <div id="requestForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Запросить оплату</div>
+                    <div class="modal-subtitle">Если сумма больше неоплаченного остатка — разница считается авансом</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="requestAmount">Сумма, грн <span class="req">*</span></label>
+                    <input type="text" id="requestAmount" placeholder="0" oninput="validateRequestForm()">
+                    <div class="form-hint" id="requestAmountHint"></div>
+                </div>
+                <div class="form-group">
+                    <label for="requestComment">Комментарий <span class="opt">необязательно</span></label>
+                    <textarea id="requestComment" placeholder="Например: на лекарства" maxlength="500"></textarea>
+                </div>
+            </div>
+            <div class="modal-error" id="requestError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeRequestModal()">Отмена</button>
+                <button class="btn btn-save" id="requestSaveBtn" disabled onclick="submitRequest()">Отправить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="requestSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title">Отправлено</div>
+            <div class="sub">Администратор получит уведомление в Telegram</div>
+        </div>
+    </div>
 </div>
 
 <!-- Media preview modal -->
@@ -51,6 +88,7 @@
     // ==========================================================
     const GET_REPORT_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-report';
     const GET_REPORT_MEDIA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-report-media';
+    const CREATE_PAYMENT_REQUEST_URL = 'https://n8n.vseproi.de/webhook/tcs2-create-payment-request';
 
     const tg = window.Telegram && window.Telegram.WebApp;
     const initData = tg ? tg.initData : '';
@@ -66,6 +104,8 @@
     let sessions = [];
     let summary = { total_sessions: 0, total_hours: 0, total_amount: 0, paid_amount: 0, unpaid_amount: 0 };
     let projects = [];
+    let pendingRequest = null;
+    let requestSaving = false;
 
     // ==========================================================
     // Helpers
@@ -112,9 +152,11 @@
             sessions = data.sessions || [];
             summary = data.summary || summary;
             projects = data.projects || [];
+            pendingRequest = data.pending_request || null;
 
             renderHeader(data);
             renderDebtBanner(data);
+            renderRequestSection();
             renderFiltersIfNeeded();
             renderBody();
         } catch (e) {
@@ -154,6 +196,93 @@
             banner.innerHTML = '';
         }
     }
+
+    // ==========================================================
+    // Request payment
+    // ==========================================================
+    function renderRequestSection() {
+        const el = document.getElementById('requestSection');
+        if (pendingRequest) {
+            el.innerHTML = `
+                <div class="pending-banner">
+                    Запрос на <b>${money(pendingRequest.amount)}</b> отправлен, ожидает решения администратора
+                    ${pendingRequest.comment ? `<div class="pending-banner-comment">«${escapeHtml(pendingRequest.comment)}»</div>` : ''}
+                </div>`;
+        } else {
+            el.innerHTML = `<button class="action-btn" style="width:100%;" onclick="openRequestModal()">Запросить оплату</button>`;
+        }
+    }
+
+    function openRequestModal() {
+        document.getElementById('requestAmount').value = summary.unpaid_amount ? Number(summary.unpaid_amount).toFixed(2) : '';
+        document.getElementById('requestComment').value = '';
+        document.getElementById('requestAmountHint').textContent = '';
+        document.getElementById('requestAmountHint').classList.remove('error');
+        document.getElementById('requestError').classList.remove('show');
+        document.getElementById('requestForm').style.display = 'block';
+        document.getElementById('requestSuccess').classList.remove('show');
+        document.getElementById('requestOverlay').classList.add('show');
+        validateRequestForm();
+    }
+
+    function validateRequestForm() {
+        const amount = Number(document.getElementById('requestAmount').value);
+        const unpaid = Number(summary.unpaid_amount) || 0;
+        const hint = document.getElementById('requestAmountHint');
+
+        if (amount > 0 && amount > unpaid) {
+            hint.textContent = `Остаток ${money(amount - unpaid)} будет считаться авансом`;
+        } else {
+            hint.textContent = '';
+        }
+
+        document.getElementById('requestSaveBtn').disabled = !(amount > 0);
+    }
+
+    function closeRequestModal() {
+        if (requestSaving) return;
+        document.getElementById('requestOverlay').classList.remove('show');
+    }
+
+    async function submitRequest() {
+        if (requestSaving) return;
+        const amount = Number(document.getElementById('requestAmount').value);
+        const comment = document.getElementById('requestComment').value.trim();
+        const errorBox = document.getElementById('requestError');
+        errorBox.classList.remove('show');
+
+        requestSaving = true;
+        const saveBtn = document.getElementById('requestSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Отправка...';
+
+        try {
+            const res = await fetch(CREATE_PAYMENT_REQUEST_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: initData, amount, comment })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отправить запрос');
+
+            document.getElementById('requestForm').style.display = 'none';
+            document.getElementById('requestSuccess').classList.add('show');
+            setTimeout(() => { closeRequestModal(); loadData(); }, 1200);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || 'Ошибка при отправке запроса. Попробуйте ещё раз.';
+            errorBox.classList.add('show');
+        } finally {
+            requestSaving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Отправить';
+            validateRequestForm();
+        }
+    }
+
+    document.getElementById('requestOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'requestOverlay') closeRequestModal();
+    });
 
     // ==========================================================
     // Filters (rendered once, values preserved across refreshes)
@@ -341,7 +470,7 @@
         if (e.target.id === 'mediaOverlay') closeMediaModal();
     });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeMediaModal();
+        if (e.key === 'Escape') { closeMediaModal(); closeRequestModal(); }
     });
 
     // ==========================================================

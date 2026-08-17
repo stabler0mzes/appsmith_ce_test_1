@@ -543,6 +543,22 @@ body.report-body {
     margin-bottom: 16px;
 }
 
+.pending-banner {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13px;
+    box-shadow: var(--shadow);
+}
+.pending-banner-comment {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-style: italic;
+}
+
 /* Summary stats */
 .stats-row {
     display: grid;
