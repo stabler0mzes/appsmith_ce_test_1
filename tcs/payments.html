@@ -59,6 +59,49 @@
             <h2>История транзакций</h2>
             <span class="count-pill neutral" id="transactionsCountPill" style="display:none;"></span>
         </div>
+        <div class="filters-row" id="filtersRow">
+            <button type="button" class="filters-toggle" onclick="toggleFiltersRow('filtersRow')">
+                <svg class="filters-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>
+                <span>Фильтры</span>
+                <span class="filters-badge">0</span>
+                <svg class="filters-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <div class="filters-content">
+                <div class="filter-group">
+                    <label for="filterEmployee">Сотрудник</label>
+                    <select id="filterEmployee" onchange="loadData()">
+                        <option value="">Все сотрудники</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterType">Тип</label>
+                    <select id="filterType" onchange="loadData()">
+                        <option value="">Все</option>
+                        <option value="payment">Оплата</option>
+                        <option value="advance">Аванс</option>
+                        <option value="repayment">Погашение долга</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterStatus">Статус</label>
+                    <select id="filterStatus" onchange="loadData()">
+                        <option value="">Все</option>
+                        <option value="pending">Не проведена</option>
+                        <option value="confirmed">Проведена</option>
+                        <option value="cancelled">Отменена</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterDateFrom">Дата от</label>
+                    <input type="date" id="filterDateFrom" onchange="loadData()">
+                </div>
+                <div class="filter-group">
+                    <label for="filterDateTo">Дата до</label>
+                    <input type="date" id="filterDateTo" onchange="loadData()">
+                </div>
+                <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
+            </div>
+        </div>
         <div id="transactionsContent"></div>
     </div>
 </div>
@@ -128,6 +171,7 @@
     let requests = [];
     let summary = { total_available: 0, total_pending: 0, total_debt: 0 };
     let activeEmployees = [];
+    let filterEmployeesLoaded = false;
     let txEmployeeId = null;
     let txSessions = [];
     let txAmountManuallyEdited = false;
@@ -137,6 +181,21 @@
     // ==========================================================
     // Load data
     // ==========================================================
+    function buildQuery() {
+        const params = new URLSearchParams();
+        const employeeId = document.getElementById('filterEmployee').value;
+        const type = document.getElementById('filterType').value;
+        const status = document.getElementById('filterStatus').value;
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+        if (employeeId) params.set('employee_id', employeeId);
+        if (type) params.set('type', type);
+        if (status) params.set('status', status);
+        if (dateFrom) params.set('date_from', dateFrom);
+        if (dateTo) params.set('date_to', dateTo);
+        return params.toString();
+    }
+
     async function loadData() {
         const btn = document.getElementById('refreshBtn');
         btn.disabled = true;
@@ -144,8 +203,11 @@
         hideError();
 
         try {
+            if (!filterEmployeesLoaded) await loadFilterEmployees();
+
+            const query = buildQuery();
             const [res, reqRes] = await Promise.all([
-                authFetch(GET_PAYMENT_DATA_URL, { method: 'GET' }),
+                authFetch(GET_PAYMENT_DATA_URL + (query ? '?' + query : ''), { method: 'GET' }),
                 authFetch(GET_PAYMENT_REQUESTS_URL, { method: 'GET' })
             ]);
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -161,6 +223,7 @@
                 if (reqData.success) requests = reqData.requests || [];
             }
 
+            updateFiltersBadge('filtersRow');
             renderStats();
             renderRequests();
             renderEmployees();
@@ -172,6 +235,34 @@
             btn.disabled = false;
             btn.classList.remove('spinning');
         }
+    }
+
+    async function loadFilterEmployees() {
+        try {
+            const res = await authFetch(ACTIVATION_QUEUE_URL, { method: 'GET' });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Ошибка загрузки сотрудников');
+            activeEmployees = data.active_employees || [];
+            filterEmployeesLoaded = true;
+
+            const select = document.getElementById('filterEmployee');
+            const current = select.value;
+            select.innerHTML = '<option value="">Все сотрудники</option>' + activeEmployees.map(e =>
+                `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`
+            ).join('');
+            select.value = current;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('filterEmployee').value = '';
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        loadData();
     }
 
     function money(n) {
