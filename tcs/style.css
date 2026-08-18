@@ -593,6 +593,34 @@ body.report-body {
 .stat-card.unpaid .stat-label { color: var(--red); }
 .stat-card.unpaid .stat-value { color: var(--red); font-size: 25px; }
 
+@media (max-width: 860px) {
+    .stats-row-list {
+        display: flex;
+        flex-direction: column;
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+    .stats-row-list .stat-card {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        border-radius: 0;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+    }
+    .stats-row-list .stat-card:last-child { border-bottom: none; }
+    .stats-row-list .stat-card .stat-label { margin-bottom: 0; }
+    .stats-row-list .stat-card .stat-value,
+    .stats-row-list .stat-card.unpaid .stat-value { font-size: 20px; }
+}
+
 .stat-card.revenue-card {
     grid-column: span 2;
     min-width: 300px;
