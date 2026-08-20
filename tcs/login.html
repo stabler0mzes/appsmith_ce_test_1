@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="login_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Вход — TCS2</title>
 <link rel="stylesheet" href="style.css">
 <script src="app.js"></script>
+<script src="i18n.js"></script>
 </head>
 <body class="login-body">
 
@@ -13,20 +14,21 @@
     <div class="login-logo">
         <div class="sidebar-logo-badge">TC</div>
         TCS2
+        <div id="langSwitchHolder"></div>
     </div>
-    <h1>Вход в систему</h1>
-    <p class="login-sub">Панель управления TimeCalculateSystem</p>
+    <h1 data-i18n="login_heading">Вход в систему</h1>
+    <p class="login-sub" data-i18n="login_sub">Панель управления TimeCalculateSystem</p>
 
     <div class="form-group">
-        <label for="loginUsername">Логин</label>
+        <label for="loginUsername" data-i18n="login_username_label">Логин</label>
         <input type="text" id="loginUsername" autocomplete="username">
     </div>
     <div class="form-group">
-        <label for="loginPassword">Пароль</label>
+        <label for="loginPassword" data-i18n="login_password_label">Пароль</label>
         <input type="password" id="loginPassword" autocomplete="current-password">
     </div>
     <div class="modal-error" id="loginError"></div>
-    <button class="btn btn-save" id="loginSubmitBtn" style="width:100%;" onclick="submitLogin()" type="button">Войти</button>
+    <button class="btn btn-save" id="loginSubmitBtn" style="width:100%;" onclick="submitLogin()" type="button" data-i18n="login_submit">Войти</button>
 </div>
 
 <script>
@@ -35,6 +37,9 @@
     if (getAuthToken()) {
         window.location.href = 'dashboard.html';
     }
+
+    document.getElementById('langSwitchHolder').innerHTML = langSwitchHtml();
+    applyI18n();
 
     ['loginUsername', 'loginPassword'].forEach(id => {
         document.getElementById(id).addEventListener('keydown', (e) => {
@@ -49,14 +54,14 @@
         errorBox.classList.remove('show');
 
         if (!username || !password) {
-            errorBox.textContent = 'Введите логин и пароль';
+            errorBox.textContent = t('login_error_required');
             errorBox.classList.add('show');
             return;
         }
 
         const btn = document.getElementById('loginSubmitBtn');
         btn.disabled = true;
-        btn.textContent = 'Вход...';
+        btn.textContent = t('login_submit_loading');
 
         try {
             const res = await fetch(LOGIN_URL, {
@@ -65,16 +70,17 @@
                 body: JSON.stringify({ username, password })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось войти');
+            if (!res.ok || !data.success) throw new Error(data.error || t('login_error_generic'));
 
             setAuthSession(data.token, data.user);
+            if (data.user && data.user.preferred_language) setLang(data.user.preferred_language);
             window.location.href = 'dashboard.html';
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка входа. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('login_error_generic');
             errorBox.classList.add('show');
             btn.disabled = false;
-            btn.textContent = 'Войти';
+            btn.textContent = t('login_submit');
         }
     }
 </script>
