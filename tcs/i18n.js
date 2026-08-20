@@ -717,12 +717,19 @@ const I18N_DICT = {
     }
 };
 
+function normalizeLangCode(lang) {
+    // The bot side (dictionaries table, employees.preferred_language) uses 'ua' for Ukrainian;
+    // this admin-panel i18n uses the ISO 639-1 code 'uk'. Normalize at the boundary so either works.
+    return lang === 'ua' ? 'uk' : lang;
+}
+
 function getLang() {
-    const stored = localStorage.getItem(I18N_STORAGE_KEY);
+    const stored = normalizeLangCode(localStorage.getItem(I18N_STORAGE_KEY));
     return I18N_SUPPORTED.includes(stored) ? stored : 'ru';
 }
 
 function setLang(lang) {
+    lang = normalizeLangCode(lang);
     if (!I18N_SUPPORTED.includes(lang)) return;
     localStorage.setItem(I18N_STORAGE_KEY, lang);
     applyI18n();
