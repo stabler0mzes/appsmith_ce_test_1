@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="users_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,12 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <h1>Пользователи</h1>
-            <p>Доступ к админ-панели: администраторы и наблюдатели</p>
+            <h1 data-i18n="users_heading">Пользователи</h1>
+            <p data-i18n="users_sub">Доступ к админ-панели: администраторы и наблюдатели</p>
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-            Обновить
+            <span data-i18n="refresh">Обновить</span>
         </button>
     </div>
 
@@ -37,12 +37,12 @@
     <div class="section">
         <div class="section-head-row">
             <div class="section-head" style="margin-bottom:0;">
-                <h2>Пользователи</h2>
+                <h2 data-i18n="users_heading">Пользователи</h2>
                 <span class="count-pill neutral" id="usersCountPill" style="display:none;"></span>
             </div>
             <button class="add-btn" onclick="openUserModal(null)">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
-                Добавить пользователя
+                <span data-i18n="users_add_btn">Добавить пользователя</span>
             </button>
         </div>
         <div id="usersContent"></div>
@@ -56,11 +56,11 @@
         <div id="userForm">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title" id="userModalTitle">Новый пользователь</div>
-                    <div class="modal-subtitle">Доступ к админ-панели</div>
+                    <div class="modal-title" id="userModalTitle" data-i18n="users_modal_new_title">Новый пользователь</div>
+                    <div class="modal-subtitle" data-i18n="users_modal_sub">Доступ к админ-панели</div>
                 </div>
                 <div class="modal-header-active" id="userActiveToggleWrap" style="display:none;">
-                    <span class="toggle-label">Активен</span>
+                    <span class="toggle-label" data-i18n="status_active">Активен</span>
                     <label class="switch">
                         <input type="checkbox" id="userIsActive" checked>
                         <span class="switch-track"></span>
@@ -69,44 +69,44 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="userUsername">Логин <span class="req">*</span></label>
+                    <label for="userUsername"><span data-i18n="users_label_username">Логин</span> <span class="req">*</span></label>
                     <input type="text" id="userUsername" autocomplete="off" oninput="validateUserForm()">
                 </div>
                 <div class="form-group">
-                    <label for="userFullName">Имя <span class="opt">(необязательно)</span></label>
+                    <label for="userFullName"><span data-i18n="label_name">Имя</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
                     <input type="text" id="userFullName">
                 </div>
                 <div class="form-group">
-                    <label for="userPassword" id="userPasswordLabel">Пароль <span class="req">*</span></label>
-                    <input type="password" id="userPassword" autocomplete="new-password" placeholder="Минимум 6 символов" oninput="validateUserForm()">
+                    <label for="userPassword" id="userPasswordLabel"><span data-i18n="users_label_password">Пароль</span> <span class="req">*</span></label>
+                    <input type="password" id="userPassword" autocomplete="new-password" data-i18n-placeholder="users_placeholder_min_chars" placeholder="Минимум 6 символов" oninput="validateUserForm()">
                 </div>
                 <div class="form-group">
-                    <label for="userPasswordConfirm" id="userPasswordConfirmLabel">Подтверждение пароля <span class="req">*</span></label>
-                    <input type="password" id="userPasswordConfirm" autocomplete="new-password" placeholder="Повторите пароль" oninput="validateUserForm()">
+                    <label for="userPasswordConfirm" id="userPasswordConfirmLabel"><span data-i18n="users_label_password_confirm">Подтверждение пароля</span> <span class="req">*</span></label>
+                    <input type="password" id="userPasswordConfirm" autocomplete="new-password" data-i18n-placeholder="users_placeholder_repeat_password" placeholder="Повторите пароль" oninput="validateUserForm()">
                 </div>
                 <div class="form-group">
-                    <label for="userRole">Роль <span class="req">*</span></label>
+                    <label for="userRole"><span data-i18n="users_label_role">Роль</span> <span class="req">*</span></label>
                     <select id="userRole">
-                        <option value="viewer">Наблюдатель — только просмотр</option>
-                        <option value="admin">Администратор — полный доступ</option>
+                        <option value="viewer" data-i18n="users_role_viewer_full">Наблюдатель — только просмотр</option>
+                        <option value="admin" data-i18n="users_role_admin_full">Администратор — полный доступ</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="userEmployee">Привязанный сотрудник <span class="opt">(для Telegram-уведомлений)</span></label>
+                    <label for="userEmployee"><span data-i18n="users_label_employee">Привязанный сотрудник</span> <span class="opt">(<span data-i18n="users_employee_hint">для Telegram-уведомлений</span>)</span></label>
                     <select id="userEmployee">
-                        <option value="">— Не привязан —</option>
+                        <option value="" data-i18n="users_employee_none">— Не привязан —</option>
                     </select>
                 </div>
             </div>
             <div class="modal-error" id="userError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeUserModal()">Отмена</button>
-                <button class="btn btn-save" id="userSaveBtn" disabled onclick="submitUser()">Сохранить</button>
+                <button class="btn btn-cancel" onclick="closeUserModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="userSaveBtn" disabled onclick="submitUser()" data-i18n="save">Сохранить</button>
             </div>
         </div>
         <div class="modal-success" id="userSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Сохранено</div>
+            <div class="title" data-i18n="sessions_saved_title">Сохранено</div>
         </div>
     </div>
 </div>
@@ -140,14 +140,14 @@
             const res = await authFetch(GET_USERS_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+            if (!data.success) throw new Error(data.error || t('payments_load_error'));
 
             users = data.users || [];
             employees = data.employees || [];
             renderUsers();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить пользователей. Попробуйте обновить страницу.');
+            showError(t('users_load_failed'));
         } finally {
             btn.disabled = false;
             btn.classList.remove('spinning');
@@ -164,7 +164,7 @@
 
         const content = document.getElementById('usersContent');
         if (users.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет пользователей');
+            content.innerHTML = emptyStateHtml(t('users_empty'));
             return;
         }
         content.innerHTML = `<div class="ref-list">${users.map(u => `
@@ -173,13 +173,13 @@
                     <div class="ref-item-title">
                         ${escapeHtml(u.full_name || u.username)}
                         ${u.role === 'admin' ? '<span class="badge badge-admin">Admin</span>' : ''}
-                        ${u.is_active ? '' : '<span class="badge badge-inactive">Отключен</span>'}
+                        ${u.is_active ? '' : `<span class="badge badge-inactive">${t('users_badge_disabled')}</span>`}
                     </div>
-                    <div class="ref-item-sub">@${escapeHtml(u.username)} · создан ${u.created_at}${u.last_login_at ? ' · вход ' + u.last_login_at : ' · ещё не входил'}${u.employee_name ? ' · привязан: ' + escapeHtml(u.employee_name) + (u.employee_has_telegram ? '' : ' (нет Telegram)') : ''}</div>
+                    <div class="ref-item-sub">@${escapeHtml(u.username)} · ${t('users_created_prefix', { date: u.created_at })}${u.last_login_at ? ' · ' + t('users_login_prefix', { date: u.last_login_at }) : ' · ' + t('users_never_logged_in')}${u.employee_name ? ' · ' + t('users_linked_prefix', { name: escapeHtml(u.employee_name) }) + (u.employee_has_telegram ? '' : t('users_no_telegram_suffix')) : ''}</div>
                 </div>
                 <div class="ref-item-actions">
-                    <button class="action-btn secondary" onclick="openUserModal(${u.id})">Редактировать</button>
-                    <button class="action-btn secondary" onclick="toggleUser(${u.id})">${u.is_active ? 'Деактивировать' : 'Активировать'}</button>
+                    <button class="action-btn secondary" onclick="openUserModal(${u.id})">${t('edit')}</button>
+                    <button class="action-btn secondary" onclick="toggleUser(${u.id})">${u.is_active ? t('users_btn_deactivate') : t('users_btn_activate')}</button>
                 </div>
             </div>`).join('')}</div>`;
     }
@@ -190,7 +190,7 @@
     function openUserModal(userId) {
         currentUser = userId ? users.find(u => u.id === userId) : null;
 
-        document.getElementById('userModalTitle').textContent = currentUser ? 'Редактирование пользователя' : 'Новый пользователь';
+        document.getElementById('userModalTitle').textContent = currentUser ? t('users_modal_edit_title') : t('users_modal_new_title');
         document.getElementById('userUsername').value = currentUser?.username || '';
         document.getElementById('userFullName').value = currentUser?.full_name || '';
         document.getElementById('userPassword').value = '';
@@ -198,8 +198,8 @@
         document.getElementById('userRole').value = currentUser?.role || 'viewer';
 
         const employeeSelect = document.getElementById('userEmployee');
-        employeeSelect.innerHTML = '<option value="">— Не привязан —</option>' + employees.map(e =>
-            `<option value="${e.id}">${escapeHtml(e.full_name)}${e.has_telegram ? '' : ' (нет Telegram)'}</option>`
+        employeeSelect.innerHTML = `<option value="">${t('users_employee_none')}</option>` + employees.map(e =>
+            `<option value="${e.id}">${escapeHtml(e.full_name)}${e.has_telegram ? '' : t('users_no_telegram_suffix')}</option>`
         ).join('');
         employeeSelect.value = currentUser?.employee_id || '';
 
@@ -207,13 +207,13 @@
         const passwordInput = document.getElementById('userPassword');
         const passwordConfirmLabel = document.getElementById('userPasswordConfirmLabel');
         if (currentUser) {
-            passwordLabel.innerHTML = 'Пароль <span class="opt">(оставьте пустым, чтобы не менять)</span>';
-            passwordInput.placeholder = 'Новый пароль (необязательно)';
-            passwordConfirmLabel.innerHTML = 'Подтверждение пароля <span class="opt">(если меняете пароль)</span>';
+            passwordLabel.innerHTML = `${t('users_label_password')} <span class="opt">(${t('users_password_hint_optional')})</span>`;
+            passwordInput.placeholder = t('users_placeholder_new_password');
+            passwordConfirmLabel.innerHTML = `${t('users_label_password_confirm')} <span class="opt">(${t('users_password_hint_confirm_optional')})</span>`;
         } else {
-            passwordLabel.innerHTML = 'Пароль <span class="req">*</span>';
-            passwordInput.placeholder = 'Минимум 6 символов';
-            passwordConfirmLabel.innerHTML = 'Подтверждение пароля <span class="req">*</span>';
+            passwordLabel.innerHTML = `${t('users_label_password')} <span class="req">*</span>`;
+            passwordInput.placeholder = t('users_placeholder_min_chars');
+            passwordConfirmLabel.innerHTML = `${t('users_label_password_confirm')} <span class="req">*</span>`;
         }
 
         const activeWrap = document.getElementById('userActiveToggleWrap');
@@ -251,9 +251,9 @@
         } else if (!currentUser && !password) {
             error = null;
         } else if (password && password.length < 6) {
-            error = 'Пароль должен быть не короче 6 символов';
+            error = t('users_error_password_short');
         } else if (password !== passwordConfirm) {
-            error = 'Пароли не совпадают';
+            error = t('users_error_password_mismatch');
         }
 
         if (error) {
@@ -287,7 +287,7 @@
         saving = true;
         const saveBtn = document.getElementById('userSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Сохранение...';
+        saveBtn.textContent = t('saving');
 
         try {
             const res = await authFetch(SAVE_USER_URL, {
@@ -296,19 +296,19 @@
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить пользователя');
+            if (!res.ok || !data.success) throw new Error(data.error || t('users_save_error'));
 
             document.getElementById('userForm').style.display = 'none';
             document.getElementById('userSuccess').classList.add('show');
             setTimeout(() => { closeUserModal(); loadData(); }, 1000);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('save_error_retry');
             errorBox.classList.add('show');
         } finally {
             saving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Сохранить';
+            saveBtn.textContent = t('save');
             validateUserForm();
         }
     }
@@ -316,8 +316,8 @@
     async function toggleUser(userId) {
         const u = users.find(x => x.id === userId);
         if (!u) return;
-        const action = u.is_active ? 'деактивировать' : 'активировать';
-        if (!confirm(`Точно ${action} пользователя «${u.full_name || u.username}»?`)) return;
+        const action = u.is_active ? t('users_toggle_action_deactivate') : t('users_toggle_action_activate');
+        if (!confirm(t('users_confirm_toggle', { action, name: u.full_name || u.username }))) return;
 
         hideError();
         try {
@@ -327,11 +327,11 @@
                 body: JSON.stringify({ id: userId })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось изменить статус пользователя');
+            if (!res.ok || !data.success) throw new Error(data.error || t('users_toggle_error'));
             loadData();
         } catch (e) {
             console.error(e);
-            showError(e.message || 'Ошибка при изменении статуса.');
+            showError(e.message || t('users_toggle_error_generic'));
         }
     }
 
@@ -352,6 +352,8 @@
         renderNav('users.html');
         loadData();
     }
+
+    document.addEventListener('tcs-lang-change', () => renderUsers());
 </script>
 
 </body>
