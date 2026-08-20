@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="report_title">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,8 +13,8 @@
     <div class="report-header" id="reportHeader">
         <div class="report-header-avatar" id="reportAvatar">?</div>
         <div>
-            <div class="report-header-name" id="reportName">Мой отчёт</div>
-            <div class="report-header-sub">Отработанные смены и начисления</div>
+            <div class="report-header-name" id="reportName" data-i18n="report_title">Мой отчёт</div>
+            <div class="report-header-sub" data-i18n="report_sub">Отработанные смены и начисления</div>
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadData()" style="margin-left:auto;">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
@@ -36,31 +36,31 @@
         <div id="requestForm">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title">Запросить оплату</div>
-                    <div class="modal-subtitle">Если сумма больше неоплаченного остатка — разница считается авансом</div>
+                    <div class="modal-title" data-i18n="report_btn_request_payment">Запросить оплату</div>
+                    <div class="modal-subtitle" data-i18n="report_request_sub">Если сумма больше неоплаченного остатка — разница считается авансом</div>
                 </div>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="requestAmount">Сумма, грн <span class="req">*</span></label>
+                    <label for="requestAmount"><span data-i18n="payments_label_amount">Сумма, грн</span> <span class="req">*</span></label>
                     <input type="text" id="requestAmount" placeholder="0" oninput="validateRequestForm()">
                     <div class="form-hint" id="requestAmountHint"></div>
                 </div>
                 <div class="form-group">
-                    <label for="requestComment">Комментарий <span class="opt">необязательно</span></label>
-                    <textarea id="requestComment" placeholder="Например: на лекарства" maxlength="500"></textarea>
+                    <label for="requestComment"><span data-i18n="report_label_comment">Комментарий</span> <span class="opt" data-i18n="optional">необязательно</span></label>
+                    <textarea id="requestComment" data-i18n-placeholder="report_placeholder_comment" placeholder="Например: на лекарства" maxlength="500"></textarea>
                 </div>
             </div>
             <div class="modal-error" id="requestError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeRequestModal()">Отмена</button>
-                <button class="btn btn-save" id="requestSaveBtn" disabled onclick="submitRequest()">Отправить</button>
+                <button class="btn btn-cancel" onclick="closeRequestModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="requestSaveBtn" disabled onclick="submitRequest()" data-i18n="report_btn_send">Отправить</button>
             </div>
         </div>
         <div class="modal-success" id="requestSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Отправлено</div>
-            <div class="sub">Администратор получит уведомление в Telegram</div>
+            <div class="title" data-i18n="payments_sent_title">Отправлено</div>
+            <div class="sub" data-i18n="report_request_sent_sub">Администратор получит уведомление в Telegram</div>
         </div>
     </div>
 </div>
@@ -70,18 +70,19 @@
     <div class="modal">
         <div class="modal-header">
             <div>
-                <div class="modal-title">Фото/видео отчёты</div>
+                <div class="modal-title" data-i18n="sessions_media_title">Фото/видео отчёты</div>
                 <div class="modal-subtitle" id="mediaSubtitle"></div>
             </div>
         </div>
         <div class="media-grid" id="mediaGrid"></div>
         <div class="modal-footer">
-            <button class="btn btn-cancel" onclick="closeMediaModal()">Закрыть</button>
+            <button class="btn btn-cancel" onclick="closeMediaModal()" data-i18n="close">Закрыть</button>
         </div>
     </div>
 </div>
 
 <script src="app.js"></script>
+<script src="i18n.js"></script>
 <script>
     // ==========================================================
     // Config
@@ -124,7 +125,7 @@
     async function loadData() {
         if (!initData) {
             document.getElementById('reportBody').innerHTML = '';
-            showError('Эта страница открывается только через Telegram — используйте кнопку меню в боте.');
+            showError(t('report_telegram_only'));
             return;
         }
 
@@ -147,7 +148,9 @@
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+            if (!res.ok || !data.success) throw new Error(data.error || t('payments_load_error'));
+
+            if (data.preferred_language) setLang(data.preferred_language);
 
             sessions = data.sessions || [];
             summary = data.summary || summary;
@@ -161,7 +164,7 @@
             renderBody();
         } catch (e) {
             console.error(e);
-            showError(e.message || 'Не удалось загрузить отчёт. Попробуйте обновить страницу.');
+            showError(e.message || t('report_load_failed'));
             document.getElementById('reportBody').innerHTML = '';
         } finally {
             btn.disabled = false;
@@ -175,7 +178,7 @@
     }
 
     function renderHeader(data) {
-        document.getElementById('reportName').textContent = data.employee_name || 'Мой отчёт';
+        document.getElementById('reportName').textContent = data.employee_name || t('report_title');
         const avatarEl = document.getElementById('reportAvatar');
         if (data.employee_avatar) {
             avatarEl.outerHTML = `<img class="report-header-avatar" id="reportAvatar" src="${escapeHtml(data.employee_avatar)}" alt="">`;
@@ -190,7 +193,7 @@
         const balance = Number(data.balance || 0);
         if (balance > 0) {
             banner.style.display = 'block';
-            banner.innerHTML = `У вас есть непогашенный аванс: <b>${money(balance)}</b>`;
+            banner.innerHTML = `${t('report_debt_banner_prefix')} <b>${money(balance)}</b>`;
         } else {
             banner.style.display = 'none';
             banner.innerHTML = '';
@@ -205,11 +208,11 @@
         if (pendingRequest) {
             el.innerHTML = `
                 <div class="pending-banner">
-                    Запрос на <b>${money(pendingRequest.amount)}</b> отправлен, ожидает решения администратора
+                    ${t('report_pending_prefix')} <b>${money(pendingRequest.amount)}</b> ${t('report_pending_suffix')}
                     ${pendingRequest.comment ? `<div class="pending-banner-comment">«${escapeHtml(pendingRequest.comment)}»</div>` : ''}
                 </div>`;
         } else {
-            el.innerHTML = `<button class="action-btn" style="width:100%;" onclick="openRequestModal()">Запросить оплату</button>`;
+            el.innerHTML = `<button class="action-btn" style="width:100%;" onclick="openRequestModal()">${t('report_btn_request_payment')}</button>`;
         }
     }
 
@@ -231,7 +234,7 @@
         const hint = document.getElementById('requestAmountHint');
 
         if (amount > 0 && amount > unpaid) {
-            hint.textContent = `Остаток ${money(amount - unpaid)} будет считаться авансом`;
+            hint.textContent = t('report_hint_remainder_advance', { amount: money(amount - unpaid) });
         } else {
             hint.textContent = '';
         }
@@ -254,7 +257,7 @@
         requestSaving = true;
         const saveBtn = document.getElementById('requestSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Отправка...';
+        saveBtn.textContent = t('payments_sending');
 
         try {
             const res = await fetch(CREATE_PAYMENT_REQUEST_URL, {
@@ -263,19 +266,19 @@
                 body: JSON.stringify({ init_data: initData, amount, comment })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отправить запрос');
+            if (!res.ok || !data.success) throw new Error(data.error || t('report_request_error'));
 
             document.getElementById('requestForm').style.display = 'none';
             document.getElementById('requestSuccess').classList.add('show');
             setTimeout(() => { closeRequestModal(); loadData(); }, 1200);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при отправке запроса. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('report_request_error_generic');
             errorBox.classList.add('show');
         } finally {
             requestSaving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Отправить';
+            saveBtn.textContent = t('report_btn_send');
             validateRequestForm();
         }
     }
@@ -301,34 +304,34 @@
         wrap.innerHTML = `
             <button type="button" class="filters-toggle" onclick="toggleFiltersRow('filtersRow')">
                 <svg class="filters-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>
-                <span>Фильтры</span>
+                <span>${t('filters')}</span>
                 <span class="filters-badge">0</span>
                 <svg class="filters-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
             </button>
             <div class="filters-content">
                 <div class="filter-group">
-                    <label for="filterDateFrom">Дата от</label>
+                    <label for="filterDateFrom">${t('sessions_filter_date_from')}</label>
                     <input type="date" id="filterDateFrom" onchange="loadData()">
                 </div>
                 <div class="filter-group">
-                    <label for="filterDateTo">Дата до</label>
+                    <label for="filterDateTo">${t('sessions_filter_date_to')}</label>
                     <input type="date" id="filterDateTo" onchange="loadData()">
                 </div>
                 <div class="filter-group">
-                    <label for="filterProject">Объект</label>
+                    <label for="filterProject">${t('sessions_filter_project')}</label>
                     <select id="filterProject" onchange="loadData()">
-                        <option value="">Все объекты</option>
+                        <option value="">${t('sessions_filter_all_objects')}</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filterPaid">Оплата</label>
+                    <label for="filterPaid">${t('sessions_filter_paid')}</label>
                     <select id="filterPaid" onchange="loadData()">
-                        <option value="">Все</option>
-                        <option value="true">Оплачено</option>
-                        <option value="false">Не оплачено</option>
+                        <option value="">${t('all')}</option>
+                        <option value="true">${t('sessions_filter_paid_yes')}</option>
+                        <option value="false">${t('sessions_filter_paid_no')}</option>
                     </select>
                 </div>
-                <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
+                <button class="filter-reset-btn" onclick="resetFilters()">${t('filters_reset')}</button>
             </div>
         `;
         document.getElementById('reportBody').before(wrap);
@@ -339,7 +342,7 @@
         const projSelect = document.getElementById('filterProject');
         if (!projSelect) return;
         const current = projSelect.value;
-        projSelect.innerHTML = '<option value="">Все объекты</option>' + projects.map(p =>
+        projSelect.innerHTML = `<option value="">${t('sessions_filter_all_objects')}</option>` + projects.map(p =>
             `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
         ).join('');
         projSelect.value = current;
@@ -366,41 +369,41 @@
         const revenueCard = `
             <div class="stat-card revenue-card" style="margin-bottom:16px;">
                 <div class="revenue-header">
-                    <div class="stat-label">Начислено всего</div>
+                    <div class="stat-label">${t('sessions_stat_total')}</div>
                     <div class="stat-value">${money(summary.total_amount)}</div>
                 </div>
                 <div class="revenue-bar"><div class="revenue-bar-paid" style="width:${paidPct}%"></div></div>
                 <div class="revenue-split">
                     <div class="revenue-split-item">
-                        <div class="revenue-split-label">Оплачено</div>
+                        <div class="revenue-split-label">${t('sessions_filter_paid_yes')}</div>
                         <div class="revenue-split-value">${money(summary.paid_amount)}</div>
                     </div>
                     <div class="revenue-split-item unpaid">
-                        <div class="revenue-split-label">Не оплачено</div>
+                        <div class="revenue-split-label">${t('sessions_filter_paid_no')}</div>
                         <div class="revenue-split-value">${money(summary.unpaid_amount)}</div>
                     </div>
                 </div>
             </div>
             <div class="stats-row" style="margin-bottom:16px;">
                 <div class="stat-card">
-                    <div class="stat-label">Смен</div>
+                    <div class="stat-label">${t('report_stat_shifts')}</div>
                     <div class="stat-value">${summary.total_sessions}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Часов</div>
+                    <div class="stat-label">${t('report_stat_hours')}</div>
                     <div class="stat-value">${hours(summary.total_hours)}</div>
                 </div>
             </div>`;
 
         const list = sessions.length === 0
-            ? emptyStateHtml('Нет смен по заданным фильтрам')
+            ? emptyStateHtml(t('report_empty_sessions'))
             : `<div class="session-list">${sessions.map(reportRowHtml).join('')}</div>`;
 
         document.getElementById('reportBody').innerHTML = revenueCard + list;
     }
 
     function reportRowHtml(s) {
-        const timeRange = `${s.start_time || '—'} – ${s.end_time || 'активна'}`;
+        const timeRange = `${s.start_time || '—'} – ${s.end_time || t('sessions_active_label')}`;
         return `
             <div class="session-row${s.is_paid ? ' paid' : ''}" style="cursor:default;">
                 <div class="session-row-top">
@@ -418,10 +421,10 @@
                         <div class="session-time">${timeRange}</div>
                     </div>
                     <div class="session-bottom-right">
-                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
+                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ' + t('dashboard_hours_short') : '—'}</div>
                         <div class="session-amount${s.is_paid ? ' paid' : ''}">
                             ${s.calculated_salary != null ? money(s.calculated_salary) : '—'}
-                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} аванс</div>` : ''}
+                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -434,7 +437,7 @@
     async function openMediaModal(sessionId) {
         const s = sessions.find(x => x.id === sessionId);
         document.getElementById('mediaSubtitle').textContent = s ? s.project_name + ' — ' + s.session_date : '';
-        document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Загрузка...');
+        document.getElementById('mediaGrid').innerHTML = emptyStateHtml(t('loading'));
         document.getElementById('mediaOverlay').classList.add('show');
 
         try {
@@ -444,11 +447,11 @@
                 body: JSON.stringify({ init_data: initData, session_id: sessionId })
             });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки медиа');
+            if (!data.success) throw new Error(data.error || t('sessions_media_load_error'));
 
             const media = data.media || [];
             if (media.length === 0) {
-                document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Нет файлов');
+                document.getElementById('mediaGrid').innerHTML = emptyStateHtml(t('sessions_media_empty'));
                 return;
             }
             document.getElementById('mediaGrid').innerHTML = media.map(m =>
@@ -458,7 +461,7 @@
             ).join('');
         } catch (e) {
             console.error(e);
-            document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Не удалось загрузить файлы');
+            document.getElementById('mediaGrid').innerHTML = emptyStateHtml(t('sessions_media_load_failed'));
         }
     }
 
