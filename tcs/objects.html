@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="objects_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,12 +24,12 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <h1>Объекты</h1>
-            <p>Управление объектами, на которых работают сотрудники</p>
+            <h1 data-i18n="objects_heading">Объекты</h1>
+            <p data-i18n="objects_sub">Управление объектами, на которых работают сотрудники</p>
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-            Обновить
+            <span data-i18n="refresh">Обновить</span>
         </button>
     </div>
 
@@ -38,12 +38,12 @@
     <div class="section">
         <div class="section-head-row">
             <div class="section-head" style="margin-bottom:0;">
-                <h2>Объекты</h2>
+                <h2 data-i18n="objects_heading">Объекты</h2>
                 <span class="count-pill neutral" id="projectsCountPill" style="display:none;"></span>
             </div>
             <button class="add-btn" onclick="openProjectModal(null)">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
-                Добавить объект
+                <span data-i18n="objects_add_btn">Добавить объект</span>
             </button>
         </div>
         <div id="projectsContent"></div>
@@ -57,11 +57,11 @@
         <div id="projectForm">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title" id="projectTitle">Новый объект</div>
-                    <div class="modal-subtitle">Данные объекта и геопозиция</div>
+                    <div class="modal-title" id="projectTitle" data-i18n="objects_modal_new_title">Новый объект</div>
+                    <div class="modal-subtitle" data-i18n="objects_modal_sub">Данные объекта и геопозиция</div>
                 </div>
                 <div class="modal-header-active">
-                    <span class="toggle-label">Активен</span>
+                    <span class="toggle-label" data-i18n="status_active">Активен</span>
                     <label class="switch">
                         <input type="checkbox" id="projectIsActive" checked>
                         <span class="switch-track"></span>
@@ -70,37 +70,37 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="projectName">Название объекта <span class="req">*</span></label>
-                    <input type="text" id="projectName" placeholder="Например, ЖК Оазис" oninput="validateProjectForm()">
+                    <label for="projectName"><span data-i18n="objects_label_name">Название объекта</span> <span class="req">*</span></label>
+                    <input type="text" id="projectName" data-i18n-placeholder="objects_placeholder_name" placeholder="Например, ЖК Оазис" oninput="validateProjectForm()">
                 </div>
 
                 <div class="form-group">
-                    <label for="projectAddress">Адрес <span class="opt">(необязательно)</span></label>
-                    <input type="text" id="projectAddress" placeholder="ул. Примерная, 1">
+                    <label for="projectAddress"><span data-i18n="objects_label_address">Адрес</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <input type="text" id="projectAddress" data-i18n-placeholder="objects_placeholder_address" placeholder="ул. Примерная, 1">
                 </div>
 
                 <div class="form-group">
-                    <label for="projectDescription">Описание <span class="opt">(необязательно)</span></label>
-                    <textarea id="projectDescription" placeholder="Дополнительная информация об объекте"></textarea>
+                    <label for="projectDescription"><span data-i18n="objects_label_description">Описание</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <textarea id="projectDescription" data-i18n-placeholder="objects_placeholder_description" placeholder="Дополнительная информация об объекте"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Геопозиция <span class="opt">(необязательно)</span></label>
-                    <div class="map-hint">Кликните по карте или перетащите маркер, чтобы установить точку объекта</div>
+                    <label><span data-i18n="objects_label_geo">Геопозиция</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <div class="map-hint" data-i18n="objects_map_hint">Кликните по карте или перетащите маркер, чтобы установить точку объекта</div>
                     <div class="map-container" id="projectMap"></div>
-                    <div class="map-coords" id="projectCoords">Координаты не заданы</div>
+                    <div class="map-coords" id="projectCoords" data-i18n="objects_coords_none">Координаты не заданы</div>
                 </div>
 
                 <div class="form-group">
-                    <label for="projectRadius">Радиус геозоны, м <span class="req">*</span></label>
+                    <label for="projectRadius"><span data-i18n="objects_label_radius">Радиус геозоны, м</span> <span class="req">*</span></label>
                     <input type="text" id="projectRadius" placeholder="300" oninput="validateProjectForm()">
                 </div>
 
-                <div class="policy-group-title">При начале смены</div>
+                <div class="policy-group-title" data-i18n="objects_policy_start">При начале смены</div>
                 <div class="toggle-row">
                     <div>
-                        <div class="toggle-label">Требовать GPS</div>
-                        <div class="toggle-sub">Подтверждение геопозиции при старте работы</div>
+                        <div class="toggle-label" data-i18n="objects_toggle_require_gps">Требовать GPS</div>
+                        <div class="toggle-sub" data-i18n="objects_toggle_require_gps_start_sub">Подтверждение геопозиции при старте работы</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="projectRequireGps">
@@ -109,8 +109,8 @@
                 </div>
                 <div class="toggle-row">
                     <div>
-                        <div class="toggle-label">Требовать фото</div>
-                        <div class="toggle-sub">Фото/видео отчёт при старте работы</div>
+                        <div class="toggle-label" data-i18n="objects_toggle_require_photo">Требовать фото</div>
+                        <div class="toggle-sub" data-i18n="objects_toggle_require_photo_start_sub">Фото/видео отчёт при старте работы</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="projectRequirePhoto">
@@ -118,11 +118,11 @@
                     </label>
                 </div>
 
-                <div class="policy-group-title">При завершении смены</div>
+                <div class="policy-group-title" data-i18n="objects_policy_end">При завершении смены</div>
                 <div class="toggle-row">
                     <div>
-                        <div class="toggle-label">Требовать GPS</div>
-                        <div class="toggle-sub">Подтверждение геопозиции при завершении работы</div>
+                        <div class="toggle-label" data-i18n="objects_toggle_require_gps">Требовать GPS</div>
+                        <div class="toggle-sub" data-i18n="objects_toggle_require_gps_end_sub">Подтверждение геопозиции при завершении работы</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="projectRequestGps">
@@ -131,8 +131,8 @@
                 </div>
                 <div class="toggle-row">
                     <div>
-                        <div class="toggle-label">Требовать фото</div>
-                        <div class="toggle-sub">Фото/видео отчёт при завершении работы</div>
+                        <div class="toggle-label" data-i18n="objects_toggle_require_photo">Требовать фото</div>
+                        <div class="toggle-sub" data-i18n="objects_toggle_require_photo_end_sub">Фото/видео отчёт при завершении работы</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="projectRequestMedia">
@@ -142,13 +142,13 @@
             </div>
             <div class="modal-error" id="projectError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeProjectModal()">Отмена</button>
-                <button class="btn btn-save" id="projectSaveBtn" disabled onclick="submitProject()">Сохранить</button>
+                <button class="btn btn-cancel" onclick="closeProjectModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="projectSaveBtn" disabled onclick="submitProject()" data-i18n="save">Сохранить</button>
             </div>
         </div>
         <div class="modal-success" id="projectSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Объект сохранён</div>
+            <div class="title" data-i18n="objects_saved_title">Объект сохранён</div>
             <div class="sub" id="projectSuccessSub"></div>
         </div>
     </div>
@@ -184,13 +184,13 @@
             const res = await authFetch(GET_PROJECTS_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки объектов');
+            if (!data.success) throw new Error(data.error || t('objects_load_error_generic'));
 
             projects = data.projects || [];
             renderProjects();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить список объектов. Попробуйте обновить страницу.');
+            showError(t('objects_load_failed'));
             document.getElementById('projectsContent').innerHTML = '';
         } finally {
             btn.disabled = false;
@@ -213,7 +213,7 @@
         const content = document.getElementById('projectsContent');
 
         if (projects.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет объектов. Добавьте первый через кнопку выше.');
+            content.innerHTML = emptyStateHtml(t('objects_empty'));
             return;
         }
 
@@ -227,31 +227,31 @@
                 <div class="card-head">
                     <div class="card-head-text">
                         <div class="card-name">${escapeHtml(p.project_name)}</div>
-                        <div class="card-username">${escapeHtml(p.project_address || (hasCoords ? 'Координаты заданы' : 'Адрес не указан'))}</div>
+                        <div class="card-username">${escapeHtml(p.project_address || (hasCoords ? t('objects_coords_set') : t('objects_address_none')))}</div>
                     </div>
                 </div>
                 <div class="badge-row">
-                    <span class="badge ${p.is_active ? 'badge-active' : 'badge-inactive'}">${p.is_active ? 'Активен' : 'Неактивен'}</span>
-                    ${p.require_gps_coordinates ? '<span class="badge badge-admin">GPS в начале</span>' : ''}
-                    ${p.require_photo_report ? '<span class="badge badge-admin">Фото в начале</span>' : ''}
-                    ${p.request_gps ? '<span class="badge badge-admin">GPS в конце</span>' : ''}
-                    ${p.request_media ? '<span class="badge badge-admin">Фото в конце</span>' : ''}
+                    <span class="badge ${p.is_active ? 'badge-active' : 'badge-inactive'}">${p.is_active ? t('status_active') : t('status_inactive')}</span>
+                    ${p.require_gps_coordinates ? `<span class="badge badge-admin">${t('objects_badge_gps_start')}</span>` : ''}
+                    ${p.require_photo_report ? `<span class="badge badge-admin">${t('objects_badge_photo_start')}</span>` : ''}
+                    ${p.request_gps ? `<span class="badge badge-admin">${t('objects_badge_gps_end')}</span>` : ''}
+                    ${p.request_media ? `<span class="badge badge-admin">${t('objects_badge_photo_end')}</span>` : ''}
                 </div>
                 <div class="card-meta">
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Радиус</span>
+                        <span class="card-meta-label">${t('objects_meta_radius')}</span>
                         <span class="card-meta-value">${p.project_radius ?? 300} м</span>
                     </div>
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Координаты</span>
+                        <span class="card-meta-label">${t('objects_meta_coords')}</span>
                         <span class="card-meta-value">${hasCoords ? Number(p.gps_latitude).toFixed(5) + ', ' + Number(p.gps_longitude).toFixed(5) : '—'}</span>
                     </div>
                 </div>
                 <div class="action-row">
-                    <button class="action-btn secondary" onclick="openProjectModal(${p.id})">Редактировать</button>
+                    <button class="action-btn secondary" onclick="openProjectModal(${p.id})">${t('edit')}</button>
                     ${p.is_active
-                        ? `<button class="action-btn secondary" onclick="toggleProjectActive(${p.id}, false)">Удалить</button>`
-                        : `<button class="action-btn secondary" onclick="toggleProjectActive(${p.id}, true)">Восстановить</button>`}
+                        ? `<button class="action-btn secondary" onclick="toggleProjectActive(${p.id}, false)">${t('delete')}</button>`
+                        : `<button class="action-btn secondary" onclick="toggleProjectActive(${p.id}, true)">${t('objects_btn_restore')}</button>`}
                 </div>
             </div>`;
     }
@@ -294,7 +294,7 @@
     function openProjectModal(projectId) {
         currentProject = projectId ? projects.find(p => p.id === projectId) : null;
 
-        document.getElementById('projectTitle').textContent = currentProject ? currentProject.project_name : 'Новый объект';
+        document.getElementById('projectTitle').textContent = currentProject ? currentProject.project_name : t('objects_modal_new_title');
         document.getElementById('projectName').value = currentProject?.project_name || '';
         document.getElementById('projectAddress').value = currentProject?.project_address || '';
         document.getElementById('projectDescription').value = currentProject?.project_description || '';
@@ -325,7 +325,7 @@
             if (hasCoords) {
                 updateProjectCoords(center);
             } else {
-                document.getElementById('projectCoords').textContent = 'Координаты не заданы';
+                document.getElementById('projectCoords').textContent = t('objects_coords_none');
                 delete document.getElementById('projectCoords').dataset.lat;
                 delete document.getElementById('projectCoords').dataset.lng;
             }
@@ -374,7 +374,7 @@
         saving = true;
         const saveBtn = document.getElementById('projectSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Сохранение...';
+        saveBtn.textContent = t('saving');
 
         try {
             const res = await authFetch(SAVE_PROJECT_URL, {
@@ -384,7 +384,7 @@
             });
 
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить объект');
+            if (!res.ok || !data.success) throw new Error(data.error || t('objects_save_error'));
 
             document.getElementById('projectForm').style.display = 'none';
             document.getElementById('projectSuccessSub').textContent = data.project_name;
@@ -393,12 +393,12 @@
             setTimeout(() => { closeProjectModal(); loadData(); }, 1400);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('save_error_retry');
             errorBox.classList.add('show');
         } finally {
             saving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Сохранить';
+            saveBtn.textContent = t('save');
             validateProjectForm();
         }
     }
@@ -408,8 +408,8 @@
         if (!project) return;
 
         const confirmMsg = makeActive
-            ? `Восстановить объект «${project.project_name}»?`
-            : `Удалить объект «${project.project_name}»? Он станет недоступен сотрудникам для выбора.`;
+            ? t('objects_confirm_restore', { name: project.project_name })
+            : t('objects_confirm_delete', { name: project.project_name });
         if (!confirm(confirmMsg)) return;
 
         try {
@@ -433,11 +433,11 @@
                 })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось изменить объект');
+            if (!res.ok || !data.success) throw new Error(data.error || t('objects_toggle_error'));
             loadData();
         } catch (e) {
             console.error(e);
-            showError('Не удалось изменить статус объекта. Попробуйте ещё раз.');
+            showError(t('objects_toggle_error_retry'));
         }
     }
 
@@ -458,6 +458,8 @@
         renderNav('objects.html');
         loadData();
     }
+
+    document.addEventListener('tcs-lang-change', () => renderProjects());
 </script>
 
 </body>
