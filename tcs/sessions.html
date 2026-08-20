@@ -488,13 +488,13 @@
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || t('sessions_force_end_error'));
 
+            saving = false;
             closeEditSessionModal();
             loadData();
         } catch (e) {
             console.error(e);
             document.getElementById('sessionError').textContent = e.message || t('sessions_force_end_error_generic');
             document.getElementById('sessionError').classList.add('show');
-        } finally {
             saving = false;
         }
     }
