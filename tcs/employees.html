@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="employees_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,12 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <h1>Сотрудники</h1>
-            <p>Активация новых регистраций и редактирование данных сотрудников</p>
+            <h1 data-i18n="employees_heading">Сотрудники</h1>
+            <p data-i18n="employees_sub">Активация новых регистраций и редактирование данных сотрудников</p>
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-            Обновить
+            <span data-i18n="refresh">Обновить</span>
         </button>
     </div>
 
@@ -36,7 +36,7 @@
 
     <div class="section">
         <div class="section-head">
-            <h2>Ожидают активации</h2>
+            <h2 data-i18n="employees_section_pending">Ожидают активации</h2>
             <span class="count-pill" id="pendingCountPill" style="display:none;"></span>
         </div>
         <div id="pendingContent"></div>
@@ -44,7 +44,7 @@
 
     <div class="section">
         <div class="section-head">
-            <h2>Активные сотрудники</h2>
+            <h2 data-i18n="employees_section_active">Активные сотрудники</h2>
             <span class="count-pill neutral" id="activeCountPill" style="display:none;"></span>
         </div>
         <div id="activeContent"></div>
@@ -52,7 +52,7 @@
 
     <div class="section">
         <div class="section-head">
-            <h2>Неактивные сотрудники</h2>
+            <h2 data-i18n="employees_section_inactive">Неактивные сотрудники</h2>
             <span class="count-pill neutral" id="inactiveCountPill" style="display:none;"></span>
         </div>
         <div id="inactiveContent"></div>
@@ -67,41 +67,41 @@
             <div class="modal-header">
                 <div class="avatar" id="activateAvatar"></div>
                 <div>
-                    <div class="modal-title" id="activateTitle">Активация сотрудника</div>
-                    <div class="modal-subtitle">Заполните обязательные поля</div>
+                    <div class="modal-title" id="activateTitle" data-i18n="employees_activate_title">Активация сотрудника</div>
+                    <div class="modal-subtitle" data-i18n="employees_fill_required">Заполните обязательные поля</div>
                 </div>
             </div>
             <div class="modal-body">
                 <div class="readonly-info" id="activateReadonlyInfo"></div>
 
                 <div class="form-group">
-                    <label for="activatePosition">Должность <span class="req">*</span></label>
-                    <input type="text" id="activatePosition" placeholder="Например, Каменщик" oninput="validateActivateForm()">
+                    <label for="activatePosition" data-i18n="label_position">Должность <span class="req">*</span></label>
+                    <input type="text" id="activatePosition" data-i18n-placeholder="employees_placeholder_position" placeholder="Например, Каменщик" oninput="validateActivateForm()">
                 </div>
 
                 <div class="form-group">
-                    <label for="activateRate">Ставка <span class="req">*</span></label>
+                    <label for="activateRate" data-i18n="label_rate">Ставка <span class="req">*</span></label>
                     <select id="activateRate" onchange="validateActivateForm()">
-                        <option value="">Выберите ставку</option>
+                        <option value="" data-i18n="select_rate">Выберите ставку</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="activateDirection">Направление деятельности <span class="req">*</span></label>
+                    <label for="activateDirection" data-i18n="label_direction_full">Направление деятельности <span class="req">*</span></label>
                     <select id="activateDirection" onchange="validateActivateForm()">
-                        <option value="">Выберите направление</option>
+                        <option value="" data-i18n="select_direction">Выберите направление</option>
                     </select>
                 </div>
             </div>
             <div class="modal-error" id="activateError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeActivateModal()">Отмена</button>
-                <button class="btn btn-save" id="activateSaveBtn" disabled onclick="submitActivation()">Сохранить</button>
+                <button class="btn btn-cancel" onclick="closeActivateModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="activateSaveBtn" disabled onclick="submitActivation()" data-i18n="save">Сохранить</button>
             </div>
         </div>
         <div class="modal-success" id="activateSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Сотрудник активирован</div>
+            <div class="title" data-i18n="employees_activated_title">Сотрудник активирован</div>
             <div class="sub" id="activateSuccessSub"></div>
         </div>
     </div>
@@ -114,11 +114,11 @@
             <div class="modal-header">
                 <div class="avatar" id="editAvatar"></div>
                 <div>
-                    <div class="modal-title" id="editTitle">Редактирование сотрудника</div>
-                    <div class="modal-subtitle">Изменить данные сотрудника</div>
+                    <div class="modal-title" id="editTitle" data-i18n="employees_edit_title">Редактирование сотрудника</div>
+                    <div class="modal-subtitle" data-i18n="employees_edit_sub">Изменить данные сотрудника</div>
                 </div>
                 <div class="modal-header-active">
-                    <span class="toggle-label">Активен</span>
+                    <span class="toggle-label" data-i18n="employees_toggle_active">Активен</span>
                     <label class="switch">
                         <input type="checkbox" id="editIsActive">
                         <span class="switch-track"></span>
@@ -130,23 +130,23 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="editName">Имя <span class="req">*</span></label>
+                        <label for="editName" data-i18n="label_name">Имя <span class="req">*</span></label>
                         <input type="text" id="editName" oninput="validateEditForm()">
                     </div>
                     <div class="form-group">
-                        <label for="editSurname">Фамилия <span class="req">*</span></label>
+                        <label for="editSurname" data-i18n="label_surname">Фамилия <span class="req">*</span></label>
                         <input type="text" id="editSurname" oninput="validateEditForm()">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="editPhone">Телефон <span class="req">*</span></label>
+                    <label for="editPhone" data-i18n="label_phone">Телефон <span class="req">*</span></label>
                     <input type="tel" id="editPhone" placeholder="+380XXXXXXXXX" oninput="validateEditForm()">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="editLanguage">Язык <span class="req">*</span></label>
+                        <label for="editLanguage" data-i18n="label_language">Язык <span class="req">*</span></label>
                         <select id="editLanguage" onchange="validateEditForm()">
                             <option value="ru">Русский</option>
                             <option value="ua">Українська</option>
@@ -154,34 +154,34 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="editRate">Ставка <span class="req">*</span></label>
+                        <label for="editRate" data-i18n="label_rate">Ставка <span class="req">*</span></label>
                         <select id="editRate" onchange="validateEditForm()">
-                            <option value="">Выберите</option>
+                            <option value="" data-i18n="select_rate">Выберите ставку</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="editPosition">Должность <span class="req">*</span></label>
+                    <label for="editPosition" data-i18n="label_position">Должность <span class="req">*</span></label>
                     <input type="text" id="editPosition" oninput="validateEditForm()">
                 </div>
 
                 <div class="form-group">
-                    <label for="editDirection">Направление деятельности <span class="req">*</span></label>
+                    <label for="editDirection" data-i18n="label_direction_full">Направление деятельности <span class="req">*</span></label>
                     <select id="editDirection" onchange="validateEditForm()">
-                        <option value="">Выберите направление</option>
+                        <option value="" data-i18n="select_direction">Выберите направление</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="editContact">Дополнительная контактная информация <span class="opt">(необязательно)</span></label>
-                    <textarea id="editContact" placeholder="Например, второй номер телефона"></textarea>
+                    <label for="editContact"><span data-i18n="label_contact">Дополнительная контактная информация</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <textarea id="editContact" data-i18n-placeholder="employees_placeholder_contact" placeholder="Например, второй номер телефона"></textarea>
                 </div>
 
                 <div class="toggle-row">
                     <div>
-                        <div class="toggle-label">Права администратора</div>
-                        <div class="toggle-sub">Получает уведомления о новых регистрациях</div>
+                        <div class="toggle-label" data-i18n="employees_toggle_admin">Права администратора</div>
+                        <div class="toggle-sub" data-i18n="employees_toggle_admin_sub">Получает уведомления о новых регистрациях</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="editIsAdmin">
@@ -191,13 +191,13 @@
             </div>
             <div class="modal-error" id="editError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeEditModal()">Отмена</button>
-                <button class="btn btn-save" id="editSaveBtn" disabled onclick="submitEdit()">Сохранить</button>
+                <button class="btn btn-cancel" onclick="closeEditModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="editSaveBtn" disabled onclick="submitEdit()" data-i18n="save">Сохранить</button>
             </div>
         </div>
         <div class="modal-success" id="editSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Данные сохранены</div>
+            <div class="title" data-i18n="employees_saved_title">Данные сохранены</div>
             <div class="sub" id="editSuccessSub"></div>
         </div>
     </div>
@@ -228,7 +228,7 @@
     // ==========================================================
     function rateLabel(id) {
         const r = hourlyRates.find(x => x.id === id);
-        return r ? `${r.price_per_hour} грн/час — ${r.position_name || ''}` : '—';
+        return r ? t('rate_label_format', { price: r.price_per_hour, position: r.position_name || '' }) : '—';
     }
 
     function directionLabel(id) {
@@ -249,7 +249,7 @@
             const res = await authFetch(QUEUE_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+            if (!data.success) throw new Error(data.error || t('load_error_generic'));
 
             pendingEmployees = data.employees || [];
             activeEmployees = data.active_employees || [];
@@ -262,7 +262,7 @@
             renderInactive();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить список сотрудников. Попробуйте обновить страницу.');
+            showError(t('employees_load_failed'));
             document.getElementById('pendingContent').innerHTML = '';
             document.getElementById('activeContent').innerHTML = '';
             document.getElementById('inactiveContent').innerHTML = '';
@@ -287,7 +287,7 @@
         const content = document.getElementById('pendingContent');
 
         if (pendingEmployees.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет сотрудников, ожидающих активации');
+            content.innerHTML = emptyStateHtml(t('employees_empty_pending'));
             return;
         }
 
@@ -304,18 +304,18 @@
                         <div class="card-username">${emp.tg_username ? '@' + escapeHtml(emp.tg_username) : escapeHtml(emp.phone_number || '')}</div>
                     </div>
                 </div>
-                <span class="badge badge-pending">Ожидает активации</span>
+                <span class="badge badge-pending">${t('employees_badge_pending')}</span>
                 <div class="card-meta">
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Телефон</span>
+                        <span class="card-meta-label">${t('label_phone')}</span>
                         <span class="card-meta-value">${escapeHtml(emp.phone_number || '—')}</span>
                     </div>
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Регистрация</span>
+                        <span class="card-meta-label">${t('employees_label_registration')}</span>
                         <span class="card-meta-value">${formatDate(emp.created_at)}</span>
                     </div>
                 </div>
-                <button class="action-btn" onclick="openActivateModal(${emp.id})">Активировать</button>
+                <button class="action-btn" onclick="openActivateModal(${emp.id})">${t('employees_btn_activate')}</button>
             </div>`;
     }
 
@@ -334,7 +334,7 @@
         const content = document.getElementById('activeContent');
 
         if (activeEmployees.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет активных сотрудников');
+            content.innerHTML = emptyStateHtml(t('employees_empty_active'));
             return;
         }
 
@@ -352,24 +352,24 @@
                     </div>
                 </div>
                 <div class="badge-row">
-                    <span class="badge badge-active">Активен</span>
-                    ${emp.is_admin ? '<span class="badge badge-admin">Администратор</span>' : ''}
+                    <span class="badge badge-active">${t('status_active')}</span>
+                    ${emp.is_admin ? `<span class="badge badge-admin">${t('role_admin')}</span>` : ''}
                 </div>
                 <div class="card-meta">
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Телефон</span>
+                        <span class="card-meta-label">${t('label_phone')}</span>
                         <span class="card-meta-value">${escapeHtml(emp.phone_number || '—')}</span>
                     </div>
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Ставка</span>
+                        <span class="card-meta-label">${t('label_rate')}</span>
                         <span class="card-meta-value">${escapeHtml(rateLabel(emp.workhour_price_id))}</span>
                     </div>
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Направление</span>
+                        <span class="card-meta-label">${t('label_direction')}</span>
                         <span class="card-meta-value">${escapeHtml(directionLabel(emp.activity_direction_id))}</span>
                     </div>
                 </div>
-                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">Редактировать</button>
+                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
             </div>`;
     }
 
@@ -388,7 +388,7 @@
         const content = document.getElementById('inactiveContent');
 
         if (inactiveEmployees.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет неактивных сотрудников');
+            content.innerHTML = emptyStateHtml(t('employees_empty_inactive'));
             return;
         }
 
@@ -406,24 +406,24 @@
                     </div>
                 </div>
                 <div class="badge-row">
-                    <span class="badge badge-inactive">Неактивен</span>
-                    ${emp.is_admin ? '<span class="badge badge-admin">Администратор</span>' : ''}
+                    <span class="badge badge-inactive">${t('status_inactive')}</span>
+                    ${emp.is_admin ? `<span class="badge badge-admin">${t('role_admin')}</span>` : ''}
                 </div>
                 <div class="card-meta">
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Телефон</span>
+                        <span class="card-meta-label">${t('label_phone')}</span>
                         <span class="card-meta-value">${escapeHtml(emp.phone_number || '—')}</span>
                     </div>
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Ставка</span>
+                        <span class="card-meta-label">${t('label_rate')}</span>
                         <span class="card-meta-value">${escapeHtml(rateLabel(emp.workhour_price_id))}</span>
                     </div>
                     <div class="card-meta-row">
-                        <span class="card-meta-label">Направление</span>
+                        <span class="card-meta-label">${t('label_direction')}</span>
                         <span class="card-meta-value">${escapeHtml(directionLabel(emp.activity_direction_id))}</span>
                     </div>
                 </div>
-                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">Редактировать</button>
+                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
             </div>`;
     }
 
@@ -438,17 +438,17 @@
         document.getElementById('activateAvatar').innerHTML = avatarHtml(emp, 'avatar');
         document.getElementById('activateTitle').textContent = emp.full_name || (emp.name + ' ' + emp.surname);
         document.getElementById('activateReadonlyInfo').innerHTML = `
-            <div><b>Телефон:</b> ${escapeHtml(emp.phone_number || '—')}</div>
-            <div><b>Telegram:</b> ${emp.tg_username ? '@' + escapeHtml(emp.tg_username) : '—'}</div>
+            <div><b>${t('employees_label_phone_colon')}</b> ${escapeHtml(emp.phone_number || '—')}</div>
+            <div><b>${t('employees_label_telegram_colon')}</b> ${emp.tg_username ? '@' + escapeHtml(emp.tg_username) : '—'}</div>
         `;
 
         const rateSelect = document.getElementById('activateRate');
-        rateSelect.innerHTML = '<option value="">Выберите ставку</option>' + hourlyRates.map(r =>
-            `<option value="${r.id}">${r.price_per_hour} грн/час — ${escapeHtml(r.position_name || '')}</option>`
+        rateSelect.innerHTML = `<option value="">${t('select_rate')}</option>` + hourlyRates.map(r =>
+            `<option value="${r.id}">${t('rate_label_format', { price: r.price_per_hour, position: escapeHtml(r.position_name || '') })}</option>`
         ).join('');
 
         const dirSelect = document.getElementById('activateDirection');
-        dirSelect.innerHTML = '<option value="">Выберите направление</option>' + activityDirections.map(d =>
+        dirSelect.innerHTML = `<option value="">${t('select_direction')}</option>` + activityDirections.map(d =>
             `<option value="${d.id}">${escapeHtml(d.direction_name)}</option>`
         ).join('');
 
@@ -490,7 +490,7 @@
         saving = true;
         const saveBtn = document.getElementById('activateSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Сохранение...';
+        saveBtn.textContent = t('saving');
 
         try {
             const res = await authFetch(SAVE_ACTIVATION_URL, {
@@ -505,24 +505,24 @@
             });
 
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить данные');
+            if (!res.ok || !data.success) throw new Error(data.error || t('save_failed'));
 
             pendingEmployees = pendingEmployees.filter(e => e.id !== currentActivateEmployee.id);
             renderPending();
 
             document.getElementById('activateForm').style.display = 'none';
-            document.getElementById('activateSuccessSub').textContent = data.employee_name + ' теперь может начать работу';
+            document.getElementById('activateSuccessSub').textContent = t('employees_activated_sub', { name: data.employee_name });
             document.getElementById('activateSuccess').classList.add('show');
 
             setTimeout(() => { closeActivateModal(); loadData(); }, 1600);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('save_error_retry');
             errorBox.classList.add('show');
         } finally {
             saving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Сохранить';
+            saveBtn.textContent = t('save');
             validateActivateForm();
         }
     }
@@ -538,17 +538,17 @@
         document.getElementById('editAvatar').innerHTML = avatarHtml(emp, 'avatar');
         document.getElementById('editTitle').textContent = emp.full_name || (emp.name + ' ' + emp.surname);
         document.getElementById('editReadonlyInfo').innerHTML = `
-            <div><b>Telegram ID:</b> ${emp.telegram_id ?? '—'}</div>
-            <div><b>Telegram username:</b> ${emp.tg_username ? '@' + escapeHtml(emp.tg_username) : '—'}</div>
+            <div><b>${t('employees_label_telegram_id_colon')}</b> ${emp.telegram_id ?? '—'}</div>
+            <div><b>${t('employees_label_telegram_username_colon')}</b> ${emp.tg_username ? '@' + escapeHtml(emp.tg_username) : '—'}</div>
         `;
 
         const rateSelect = document.getElementById('editRate');
-        rateSelect.innerHTML = '<option value="">Выберите</option>' + hourlyRates.map(r =>
-            `<option value="${r.id}">${r.price_per_hour} грн/час — ${escapeHtml(r.position_name || '')}</option>`
+        rateSelect.innerHTML = `<option value="">${t('select_rate')}</option>` + hourlyRates.map(r =>
+            `<option value="${r.id}">${t('rate_label_format', { price: r.price_per_hour, position: escapeHtml(r.position_name || '') })}</option>`
         ).join('');
 
         const dirSelect = document.getElementById('editDirection');
-        dirSelect.innerHTML = '<option value="">Выберите направление</option>' + activityDirections.map(d =>
+        dirSelect.innerHTML = `<option value="">${t('select_direction')}</option>` + activityDirections.map(d =>
             `<option value="${d.id}">${escapeHtml(d.direction_name)}</option>`
         ).join('');
 
@@ -611,7 +611,7 @@
         saving = true;
         const saveBtn = document.getElementById('editSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Сохранение...';
+        saveBtn.textContent = t('saving');
 
         try {
             const res = await authFetch(UPDATE_EMPLOYEE_URL, {
@@ -621,21 +621,21 @@
             });
 
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить данные');
+            if (!res.ok || !data.success) throw new Error(data.error || t('save_failed'));
 
             document.getElementById('editForm').style.display = 'none';
-            document.getElementById('editSuccessSub').textContent = data.employee_name + (payload.is_active ? '' : ' — деактивирован');
+            document.getElementById('editSuccessSub').textContent = data.employee_name + (payload.is_active ? '' : t('employees_deactivated_suffix'));
             document.getElementById('editSuccess').classList.add('show');
 
             setTimeout(() => { closeEditModal(); loadData(); }, 1600);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('save_error_retry');
             errorBox.classList.add('show');
         } finally {
             saving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Сохранить';
+            saveBtn.textContent = t('save');
             validateEditForm();
         }
     }
@@ -660,6 +660,8 @@
         renderNav('employees.html');
         loadData();
     }
+
+    document.addEventListener('tcs-lang-change', () => { renderPending(); renderActive(); renderInactive(); });
 </script>
 
 </body>
