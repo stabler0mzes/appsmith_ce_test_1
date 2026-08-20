@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="dashboard_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,12 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <h1>Сейчас на объектах</h1>
-            <p>Сотрудники с активной сменой прямо сейчас, сгруппированные по объектам</p>
+            <h1 data-i18n="dashboard_heading">Сейчас на объектах</h1>
+            <p data-i18n="dashboard_sub">Сотрудники с активной сменой прямо сейчас, сгруппированные по объектам</p>
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-            Обновить
+            <span data-i18n="refresh">Обновить</span>
         </button>
     </div>
 
@@ -63,13 +63,13 @@
             const res = await authFetch(GET_ACTIVE_EMPLOYEES_URL, { method: 'GET' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+            if (!data.success) throw new Error(data.error || t('load_error_generic'));
 
             objects = data.objects || [];
             render();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить данные. Попробуйте обновить страницу.');
+            showError(t('load_failed_retry'));
         } finally {
             btn.disabled = false;
             btn.classList.remove('spinning');
@@ -83,7 +83,7 @@
         const content = document.getElementById('dashboardContent');
 
         if (objects.length === 0) {
-            content.innerHTML = emptyStateHtml('Сейчас никто не работает');
+            content.innerHTML = emptyStateHtml(t('dashboard_empty'));
             stopTicking();
             return;
         }
@@ -93,11 +93,11 @@
         content.innerHTML = `
             <div class="stats-row" style="margin-bottom: 28px;">
                 <div class="stat-card">
-                    <div class="stat-label">Объектов сейчас в работе</div>
+                    <div class="stat-label">${t('dashboard_stat_objects')}</div>
                     <div class="stat-value">${objects.length}</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Сотрудников на смене</div>
+                    <div class="stat-label">${t('dashboard_stat_employees')}</div>
                     <div class="stat-value">${totalEmployees}</div>
                 </div>
             </div>
@@ -129,12 +129,12 @@
                     ${avatarHtml(emp, 'avatar')}
                     <div class="card-head-text">
                         <div class="card-name">${escapeHtml(name)}</div>
-                        <div class="card-username">С ${escapeHtml(emp.start_time)}</div>
+                        <div class="card-username">${t('dashboard_since', { time: escapeHtml(emp.start_time) })}</div>
                     </div>
                 </div>
                 <div class="card-meta">
                     <div class="card-meta-row">
-                        <span class="card-meta-label">В работе</span>
+                        <span class="card-meta-label">${t('dashboard_in_progress')}</span>
                         <span class="card-meta-value session-duration" data-start="${escapeHtml(emp.start_datetime_utc)}">—</span>
                     </div>
                 </div>
@@ -151,7 +151,7 @@
         const totalMinutes = Math.floor(diffMs / 60000);
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        return `${hours}ч ${minutes}м`;
+        return `${hours}${t('dashboard_hours_short')} ${minutes}${t('dashboard_minutes_short')}`;
     }
 
     function tickDurations() {
@@ -180,6 +180,8 @@
         renderNav('dashboard.html');
         loadData();
     }
+
+    document.addEventListener('tcs-lang-change', () => render());
 </script>
 
 </body>

@@ -40,6 +40,20 @@ const I18N_DICT = {
         error_generic: 'Что-то пошло не так. Попробуйте ещё раз.',
         filters: 'Фильтры',
         filters_reset: 'Сбросить фильтры',
+        load_error_generic: 'Ошибка загрузки данных',
+        load_failed_retry: 'Не удалось загрузить данные. Попробуйте обновить страницу.',
+
+        // dashboard.html
+        dashboard_doctitle: 'Сейчас на объектах',
+        dashboard_heading: 'Сейчас на объектах',
+        dashboard_sub: 'Сотрудники с активной сменой прямо сейчас, сгруппированные по объектам',
+        dashboard_empty: 'Сейчас никто не работает',
+        dashboard_stat_objects: 'Объектов сейчас в работе',
+        dashboard_stat_employees: 'Сотрудников на смене',
+        dashboard_since: 'С {time}',
+        dashboard_in_progress: 'В работе',
+        dashboard_hours_short: 'ч',
+        dashboard_minutes_short: 'м',
 
         // login.html
         login_doctitle: 'Вход — TCS2',
@@ -80,6 +94,20 @@ const I18N_DICT = {
         error_generic: 'Щось пішло не так. Спробуйте ще раз.',
         filters: 'Фільтри',
         filters_reset: 'Скинути фільтри',
+        load_error_generic: 'Помилка завантаження даних',
+        load_failed_retry: 'Не вдалося завантажити дані. Спробуйте оновити сторінку.',
+
+        // dashboard.html
+        dashboard_doctitle: 'Зараз на об’єктах',
+        dashboard_heading: 'Зараз на об’єктах',
+        dashboard_sub: 'Співробітники з активною зміною просто зараз, згруповані за об’єктами',
+        dashboard_empty: 'Зараз ніхто не працює',
+        dashboard_stat_objects: 'Об’єктів зараз у роботі',
+        dashboard_stat_employees: 'Співробітників на зміні',
+        dashboard_since: 'З {time}',
+        dashboard_in_progress: 'У роботі',
+        dashboard_hours_short: 'год',
+        dashboard_minutes_short: 'хв',
 
         login_doctitle: 'Вхід — TCS2',
         login_heading: 'Вхід у систему',
