@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="payments_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,14 +23,14 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <h1>Оплата</h1>
-            <p>Начисление и подтверждение оплаты отработанных часов через Telegram</p>
+            <h1 data-i18n="payments_heading">Оплата</h1>
+            <p data-i18n="payments_sub">Начисление и подтверждение оплаты отработанных часов через Telegram</p>
         </div>
         <div style="display:flex; gap:8px;">
-            <button class="action-btn" style="margin-top:0;" onclick="openTxModal()">Создать транзакцию</button>
+            <button class="action-btn" style="margin-top:0;" onclick="openTxModal()" data-i18n="payments_create_tx_btn">Создать транзакцию</button>
             <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-                Обновить
+                <span data-i18n="refresh">Обновить</span>
             </button>
         </div>
     </div>
@@ -41,7 +41,7 @@
 
     <div class="section" id="requestsSection" style="display:none;">
         <div class="section-head">
-            <h2>Запросы на транзакцию</h2>
+            <h2 data-i18n="payments_section_requests">Запросы на транзакцию</h2>
             <span class="count-pill neutral" id="requestsCountPill" style="display:none;"></span>
         </div>
         <div id="requestsContent"></div>
@@ -49,7 +49,7 @@
 
     <div class="section">
         <div class="section-head">
-            <h2>Сотрудники с задолженностью</h2>
+            <h2 data-i18n="payments_section_employees_debt">Сотрудники с задолженностью</h2>
             <span class="count-pill neutral" id="employeesCountPill" style="display:none;"></span>
         </div>
         <div id="employeesContent"></div>
@@ -57,50 +57,50 @@
 
     <div class="section">
         <div class="section-head">
-            <h2>История транзакций</h2>
+            <h2 data-i18n="payments_section_history">История транзакций</h2>
             <span class="count-pill neutral" id="transactionsCountPill" style="display:none;"></span>
         </div>
         <div class="filters-row" id="filtersRow">
             <button type="button" class="filters-toggle" onclick="toggleFiltersRow('filtersRow')">
                 <svg class="filters-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>
-                <span>Фильтры</span>
+                <span data-i18n="filters">Фильтры</span>
                 <span class="filters-badge">0</span>
                 <svg class="filters-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
             </button>
             <div class="filters-content">
                 <div class="filter-group">
-                    <label for="filterEmployee">Сотрудник</label>
+                    <label for="filterEmployee" data-i18n="sessions_filter_employee">Сотрудник</label>
                     <select id="filterEmployee" onchange="loadData()">
-                        <option value="">Все сотрудники</option>
+                        <option value="" data-i18n="sessions_filter_all_employees">Все сотрудники</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filterType">Тип</label>
+                    <label for="filterType" data-i18n="payments_filter_type">Тип</label>
                     <select id="filterType" onchange="loadData()">
-                        <option value="">Все</option>
-                        <option value="payment">Оплата</option>
-                        <option value="advance">Аванс</option>
-                        <option value="repayment">Погашение долга</option>
+                        <option value="" data-i18n="all">Все</option>
+                        <option value="payment" data-i18n="payments_filter_type_payment">Оплата</option>
+                        <option value="advance" data-i18n="payments_filter_type_advance">Аванс</option>
+                        <option value="repayment" data-i18n="payments_filter_type_repayment">Погашение долга</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filterStatus">Статус</label>
+                    <label for="filterStatus" data-i18n="payments_filter_status">Статус</label>
                     <select id="filterStatus" onchange="loadData()">
-                        <option value="">Все</option>
-                        <option value="pending">Не проведена</option>
-                        <option value="confirmed">Проведена</option>
-                        <option value="cancelled">Отменена</option>
+                        <option value="" data-i18n="all">Все</option>
+                        <option value="pending" data-i18n="payments_status_pending">Не проведена</option>
+                        <option value="confirmed" data-i18n="payments_status_confirmed">Проведена</option>
+                        <option value="cancelled" data-i18n="payments_status_cancelled">Отменена</option>
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filterDateFrom">Дата от</label>
+                    <label for="filterDateFrom" data-i18n="sessions_filter_date_from">Дата от</label>
                     <input type="date" id="filterDateFrom" onchange="loadData()">
                 </div>
                 <div class="filter-group">
-                    <label for="filterDateTo">Дата до</label>
+                    <label for="filterDateTo" data-i18n="sessions_filter_date_to">Дата до</label>
                     <input type="date" id="filterDateTo" onchange="loadData()">
                 </div>
-                <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
+                <button class="filter-reset-btn" onclick="resetFilters()" data-i18n="filters_reset">Сбросить фильтры</button>
             </div>
         </div>
         <div id="transactionsContent"></div>
@@ -114,40 +114,40 @@
         <div id="txForm">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title">Новая транзакция</div>
-                    <div class="modal-subtitle">Оплата за смены и/или аванс — одной операцией</div>
+                    <div class="modal-title" data-i18n="payments_modal_new_tx_title">Новая транзакция</div>
+                    <div class="modal-subtitle" data-i18n="payments_modal_new_tx_sub">Оплата за смены и/или аванс — одной операцией</div>
                 </div>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="txEmployeeSelect">Сотрудник <span class="req">*</span></label>
+                    <label for="txEmployeeSelect"><span data-i18n="sessions_filter_employee">Сотрудник</span> <span class="req">*</span></label>
                     <select id="txEmployeeSelect" onchange="onTxEmployeeChange()">
-                        <option value="">Загрузка...</option>
+                        <option value="" data-i18n="loading">Загрузка...</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Смены к оплате (необязательно)</label>
+                    <label data-i18n="payments_label_sessions_optional">Смены к оплате (необязательно)</label>
                     <div class="session-picker-list" id="txSessionList">
-                        <div class="state-box" style="padding:16px;">Сначала выберите сотрудника</div>
+                        <div class="state-box" style="padding:16px;" data-i18n="payments_select_employee_first">Сначала выберите сотрудника</div>
                     </div>
                     <div class="session-picker-total" id="txSelectedSummary"></div>
                 </div>
                 <div class="form-group">
-                    <label for="txAmount">Сумма, грн <span class="req">*</span></label>
+                    <label for="txAmount"><span data-i18n="payments_label_amount">Сумма, грн</span> <span class="req">*</span></label>
                     <input type="text" id="txAmount" placeholder="0" oninput="validateTxForm()">
                     <div class="form-hint" id="txAmountHint"></div>
                 </div>
             </div>
             <div class="modal-error" id="txError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeTxModal()">Отмена</button>
-                <button class="btn btn-save" id="txSaveBtn" disabled onclick="submitTx()">Отправить в Telegram</button>
+                <button class="btn btn-cancel" onclick="closeTxModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="txSaveBtn" disabled onclick="submitTx()" data-i18n="payments_btn_send_telegram">Отправить в Telegram</button>
             </div>
         </div>
         <div class="modal-success" id="txSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Отправлено</div>
-            <div class="sub">Сотрудник получит уведомление в Telegram с кнопкой «Получил»</div>
+            <div class="title" data-i18n="payments_sent_title">Отправлено</div>
+            <div class="sub" data-i18n="payments_sent_sub">Сотрудник получит уведомление в Telegram с кнопкой «Получил»</div>
         </div>
     </div>
 </div>
@@ -213,7 +213,7 @@
             ]);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+            if (!data.success) throw new Error(data.error || t('payments_load_error'));
 
             employees = data.employees || [];
             transactions = data.transactions || [];
@@ -231,7 +231,7 @@
             renderTransactions();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить данные. Попробуйте обновить страницу.');
+            showError(t('payments_load_failed'));
         } finally {
             btn.disabled = false;
             btn.classList.remove('spinning');
@@ -242,13 +242,13 @@
         try {
             const res = await authFetch(ACTIVATION_QUEUE_URL, { method: 'GET' });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки сотрудников');
+            if (!data.success) throw new Error(data.error || t('payments_load_employees_error'));
             activeEmployees = data.active_employees || [];
             filterEmployeesLoaded = true;
 
             const select = document.getElementById('filterEmployee');
             const current = select.value;
-            select.innerHTML = '<option value="">Все сотрудники</option>' + activeEmployees.map(e =>
+            select.innerHTML = `<option value="">${t('sessions_filter_all_employees')}</option>` + activeEmployees.map(e =>
                 `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`
             ).join('');
             select.value = current;
@@ -276,15 +276,15 @@
     function renderStats() {
         document.getElementById('statsRow').innerHTML = `
             <div class="stat-card unpaid">
-                <div class="stat-label">Доступно к оплате</div>
+                <div class="stat-label">${t('payments_stat_available')}</div>
                 <div class="stat-value">${money(summary.total_available)}</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Ожидает подтверждения</div>
+                <div class="stat-label">${t('payments_stat_pending')}</div>
                 <div class="stat-value">${money(summary.total_pending)}</div>
             </div>
             <div class="stat-card${summary.total_debt > 0 ? ' unpaid' : ''}">
-                <div class="stat-label">Долг по авансам</div>
+                <div class="stat-label">${t('payments_stat_debt')}</div>
                 <div class="stat-value">${money(summary.total_debt)}</div>
             </div>
         `;
@@ -300,7 +300,7 @@
 
         const content = document.getElementById('employeesContent');
         if (employees.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет сотрудников с неоплаченными сменами или долгом по авансам');
+            content.innerHTML = emptyStateHtml(t('payments_employees_empty'));
             return;
         }
         content.innerHTML = `<div class="grid">${employees.map(e => `
@@ -309,20 +309,20 @@
                     ${avatarHtml(e, 'avatar')}
                     <div class="card-head-text">
                         <div class="card-name">${escapeHtml(e.full_name)}</div>
-                        <div class="card-username">${e.unpaid_count > 0 ? e.unpaid_count + ' ' + pluralSessions(e.unpaid_count) : 'нет неоплаченных смен'}</div>
+                        <div class="card-username">${e.unpaid_count > 0 ? e.unpaid_count + ' ' + pluralSessions(e.unpaid_count) : t('payments_no_unpaid_sessions')}</div>
                     </div>
                 </div>
                 <div class="balance-amount">${money(e.unpaid_amount)}</div>
-                ${e.balance > 0 ? `<div class="debt-amount">Долг: ${money(e.balance)}</div>` : ''}
-                <button class="action-btn" onclick="openTxModal(${e.id})">Создать транзакцию</button>
+                ${e.balance > 0 ? `<div class="debt-amount">${t('payments_debt_prefix', { amount: money(e.balance) })}</div>` : ''}
+                <button class="action-btn" onclick="openTxModal(${e.id})">${t('payments_create_tx_btn')}</button>
             </div>`).join('')}</div>`;
     }
 
     function pluralSessions(n) {
         const mod10 = n % 10, mod100 = n % 100;
-        if (mod10 === 1 && mod100 !== 11) return 'смена';
-        if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return 'смены';
-        return 'смен';
+        if (mod10 === 1 && mod100 !== 11) return t('payments_session_one');
+        if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return t('payments_session_few');
+        return t('payments_session_many');
     }
 
     // ==========================================================
@@ -342,13 +342,13 @@
                         ${escapeHtml(r.full_name)} — ${money(r.amount)}
                     </div>
                     <div class="tx-item-dates">
-                        Запрошено: ${r.created_at}
+                        ${t('payments_requested_label', { date: r.created_at })}
                         ${r.comment ? ' · «' + escapeHtml(r.comment) + '»' : ''}
                     </div>
                 </div>
                 <div class="ref-item-actions">
-                    <button class="action-btn" style="margin-top:0;" onclick="approveRequest(${r.id}, ${r.employee_id}, ${r.amount})">Одобрить</button>
-                    <button class="action-btn secondary" onclick="declineRequest(${r.id})">Отклонить</button>
+                    <button class="action-btn" style="margin-top:0;" onclick="approveRequest(${r.id}, ${r.employee_id}, ${r.amount})">${t('payments_btn_approve')}</button>
+                    <button class="action-btn secondary" onclick="declineRequest(${r.id})">${t('payments_btn_decline')}</button>
                 </div>
             </div>`).join('')}</div>`;
     }
@@ -362,7 +362,7 @@
     }
 
     async function declineRequest(id) {
-        if (!confirm('Отклонить этот запрос? Сотрудник получит уведомление в Telegram.')) return;
+        if (!confirm(t('payments_confirm_decline'))) return;
         hideError();
         try {
             const res = await authFetch(DECLINE_PAYMENT_REQUEST_URL, {
@@ -371,11 +371,11 @@
                 body: JSON.stringify({ request_id: id })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отклонить запрос');
+            if (!res.ok || !data.success) throw new Error(data.error || t('payments_decline_error'));
             loadData();
         } catch (e) {
             console.error(e);
-            showError(e.message || 'Ошибка при отклонении запроса.');
+            showError(e.message || t('payments_decline_error_generic'));
         }
     }
 
@@ -383,14 +383,14 @@
     // Transaction history
     // ==========================================================
     function statusBadge(status) {
-        if (status === 'pending') return '<span class="badge badge-pending">Не проведена</span>';
-        if (status === 'confirmed') return '<span class="badge badge-active">Проведена</span>';
-        return '<span class="badge badge-inactive">Отменена</span>';
+        if (status === 'pending') return `<span class="badge badge-pending">${t('payments_status_pending')}</span>`;
+        if (status === 'confirmed') return `<span class="badge badge-active">${t('payments_status_confirmed')}</span>`;
+        return `<span class="badge badge-inactive">${t('payments_status_cancelled')}</span>`;
     }
 
     function typeBadge(type) {
-        if (type === 'advance') return '<span class="badge badge-admin">Аванс</span>';
-        if (type === 'repayment') return '<span class="badge badge-active">Погашение долга</span>';
+        if (type === 'advance') return `<span class="badge badge-admin">${t('payments_filter_type_advance')}</span>`;
+        if (type === 'repayment') return `<span class="badge badge-active">${t('payments_filter_type_repayment')}</span>`;
         return '';
     }
 
@@ -401,31 +401,31 @@
 
         const content = document.getElementById('transactionsContent');
         if (transactions.length === 0) {
-            content.innerHTML = emptyStateHtml('Транзакций пока нет');
+            content.innerHTML = emptyStateHtml(t('payments_transactions_empty'));
             return;
         }
-        content.innerHTML = `<div class="ref-list">${transactions.map(t => `
+        content.innerHTML = `<div class="ref-list">${transactions.map(tx => `
             <div class="ref-item">
                 <div class="ref-item-main">
                     <div class="ref-item-title">
-                        ${escapeHtml(t.full_name)} — ${money(t.amount)}
-                        ${typeBadge(t.type)}
-                        ${statusBadge(t.status)}
+                        ${escapeHtml(tx.full_name)} — ${money(tx.amount)}
+                        ${typeBadge(tx.type)}
+                        ${statusBadge(tx.status)}
                     </div>
                     <div class="tx-item-dates">
-                        Создана: ${t.created_at}
-                        ${t.confirmed_at ? ' · Подтверждена: ' + t.confirmed_at : ''}
-                        ${t.cancelled_at ? ' · Отменена: ' + t.cancelled_at : ''}
+                        ${t('payments_created_label', { date: tx.created_at })}
+                        ${tx.confirmed_at ? ' · ' + t('payments_confirmed_suffix', { date: tx.confirmed_at }) : ''}
+                        ${tx.cancelled_at ? ' · ' + t('payments_cancelled_suffix', { date: tx.cancelled_at }) : ''}
                     </div>
                 </div>
                 <div class="ref-item-actions">
-                    ${t.status === 'pending' ? `<button class="action-btn secondary" onclick="cancelTx(${t.id})">Отменить</button>` : ''}
+                    ${tx.status === 'pending' ? `<button class="action-btn secondary" onclick="cancelTx(${tx.id})">${t('payments_btn_cancel')}</button>` : ''}
                 </div>
             </div>`).join('')}</div>`;
     }
 
     async function cancelTx(id) {
-        if (!confirm('Отменить эту транзакцию? Смены снова станут доступны для оплаты.')) return;
+        if (!confirm(t('payments_confirm_cancel_tx'))) return;
         hideError();
         try {
             const res = await authFetch(CANCEL_TRANSACTION_URL, {
@@ -434,11 +434,11 @@
                 body: JSON.stringify({ transaction_id: id })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отменить транзакцию');
+            if (!res.ok || !data.success) throw new Error(data.error || t('payments_cancel_tx_error'));
             loadData();
         } catch (e) {
             console.error(e);
-            showError(e.message || 'Ошибка при отмене транзакции.');
+            showError(e.message || t('payments_cancel_tx_error_generic'));
         }
     }
 
@@ -457,20 +457,20 @@
         document.getElementById('txForm').style.display = 'block';
         document.getElementById('txSuccess').classList.remove('show');
         document.getElementById('txSaveBtn').disabled = true;
-        document.getElementById('txSessionList').innerHTML = '<div class="state-box" style="padding:16px;">Сначала выберите сотрудника</div>';
+        document.getElementById('txSessionList').innerHTML = `<div class="state-box" style="padding:16px;">${t('payments_select_employee_first')}</div>`;
         document.getElementById('txSelectedSummary').innerHTML = '';
         document.getElementById('txOverlay').classList.add('show');
 
         const select = document.getElementById('txEmployeeSelect');
-        select.innerHTML = '<option value="">Загрузка...</option>';
+        select.innerHTML = `<option value="">${t('loading')}</option>`;
 
         try {
             const res = await authFetch(ACTIVATION_QUEUE_URL, { method: 'GET' });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки сотрудников');
+            if (!data.success) throw new Error(data.error || t('payments_load_employees_error'));
             activeEmployees = data.active_employees || [];
 
-            select.innerHTML = '<option value="">Выберите сотрудника</option>' + activeEmployees.map(e =>
+            select.innerHTML = `<option value="">${t('payments_select_employee_placeholder')}</option>` + activeEmployees.map(e =>
                 `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`
             ).join('');
             if (txEmployeeId) {
@@ -479,7 +479,7 @@
             }
         } catch (e) {
             console.error(e);
-            select.innerHTML = '<option value="">Не удалось загрузить список</option>';
+            select.innerHTML = `<option value="">${t('payments_load_list_failed')}</option>`;
         }
         validateTxForm();
     }
@@ -491,7 +491,7 @@
 
         if (!txEmployeeId) {
             txSessions = [];
-            document.getElementById('txSessionList').innerHTML = '<div class="state-box" style="padding:16px;">Сначала выберите сотрудника</div>';
+            document.getElementById('txSessionList').innerHTML = `<div class="state-box" style="padding:16px;">${t('payments_select_employee_first')}</div>`;
             document.getElementById('txSelectedSummary').innerHTML = '';
             validateTxForm();
             return;
@@ -500,23 +500,23 @@
     }
 
     async function loadTxSessions() {
-        document.getElementById('txSessionList').innerHTML = '<div class="state-box" style="padding:16px;">Загрузка...</div>';
+        document.getElementById('txSessionList').innerHTML = `<div class="state-box" style="padding:16px;">${t('loading')}</div>`;
         try {
             const res = await authFetch(`${GET_UNPAID_SESSIONS_URL}?employee_id=${txEmployeeId}`, { method: 'GET' });
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки смен');
+            if (!data.success) throw new Error(data.error || t('payments_sessions_load_error'));
             txSessions = data.sessions || [];
             renderTxSessionList();
         } catch (e) {
             console.error(e);
-            document.getElementById('txSessionList').innerHTML = emptyStateHtml('Не удалось загрузить смены');
+            document.getElementById('txSessionList').innerHTML = emptyStateHtml(t('payments_sessions_load_failed'));
         }
     }
 
     function renderTxSessionList() {
         const list = document.getElementById('txSessionList');
         if (txSessions.length === 0) {
-            list.innerHTML = emptyStateHtml('Нет доступных смен — вся сумма уйдёт в аванс');
+            list.innerHTML = emptyStateHtml(t('payments_no_available_sessions'));
             updateTxSummary();
             return;
         }
@@ -525,7 +525,7 @@
                 <input type="checkbox" checked data-session-id="${s.id}" onchange="updateTxSummary()">
                 <div class="session-picker-info">
                     <div class="session-picker-project">${escapeHtml(s.project_name)}</div>
-                    <div class="session-picker-meta">${s.session_date} · ${s.duration_hours} ч</div>
+                    <div class="session-picker-meta">${s.session_date} · ${s.duration_hours} ${t('dashboard_hours_short')}</div>
                 </div>
                 <div class="session-picker-amount">${money(s.calculated_salary)}</div>
             </label>`).join('');
@@ -548,7 +548,7 @@
         const total = selected.reduce((sum, s) => sum + Number(s.calculated_salary), 0);
 
         document.getElementById('txSelectedSummary').innerHTML =
-            `<span>Выбрано смен: ${selected.length}</span><b>${money(total)}</b>`;
+            `<span>${t('payments_selected_sessions_label', { count: selected.length })}</span><b>${money(total)}</b>`;
 
         if (!txAmountManuallyEdited) {
             document.getElementById('txAmount').value = total ? total.toFixed(2) : '';
@@ -564,10 +564,10 @@
         const hint = document.getElementById('txAmountHint');
 
         if (amount > 0 && amount > sessionsSum) {
-            hint.textContent = `Остаток ${money(amount - sessionsSum)} уйдёт сотруднику в аванс`;
+            hint.textContent = t('payments_hint_remainder_advance', { amount: money(amount - sessionsSum) });
             hint.classList.remove('error');
         } else if (amount > 0 && sessionsSum > 0 && amount < sessionsSum) {
-            hint.textContent = `Сумма не может быть меньше суммы выбранных смен (${money(sessionsSum)})`;
+            hint.textContent = t('payments_hint_min_amount', { amount: money(sessionsSum) });
             hint.classList.add('error');
         } else {
             hint.textContent = '';
@@ -595,7 +595,7 @@
         saving = true;
         const saveBtn = document.getElementById('txSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Отправка...';
+        saveBtn.textContent = t('payments_sending');
 
         try {
             const res = await authFetch(CREATE_TRANSACTION_URL, {
@@ -604,7 +604,7 @@
                 body: JSON.stringify({ employee_id: txEmployeeId, session_ids: sessionIds, amount, request_id: currentRequestId || undefined })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось создать транзакцию');
+            if (!res.ok || !data.success) throw new Error(data.error || t('payments_create_tx_error'));
 
             currentRequestId = null;
             document.getElementById('txForm').style.display = 'none';
@@ -612,12 +612,12 @@
             setTimeout(() => { closeTxModal(); loadData(); }, 1200);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при создании транзакции. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('payments_create_tx_error_generic');
             errorBox.classList.add('show');
         } finally {
             saving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Отправить в Telegram';
+            saveBtn.textContent = t('payments_btn_send_telegram');
             validateTxForm();
         }
     }
@@ -639,6 +639,8 @@
         renderNav('payments.html');
         loadData();
     }
+
+    document.addEventListener('tcs-lang-change', () => { renderStats(); renderRequests(); renderEmployees(); renderTransactions(); });
 </script>
 
 </body>
