@@ -45,7 +45,7 @@ async function authFetch(url, options) {
     if (res.status === 401) {
         clearAuthSession();
         window.location.href = 'login.html';
-        throw new Error('Требуется авторизация');
+        throw new Error(t('auth_required'));
     }
     return res;
 }
@@ -88,25 +88,33 @@ function updateFiltersBadge(rowId) {
 // ==========================================================
 // Add an entry here whenever a new page is added to the admin site.
 const NAV_PAGES = [
-    { href: 'dashboard.html', label: 'Главная' },
-    { href: 'employees.html', label: 'Сотрудники' },
-    { href: 'objects.html', label: 'Объекты' },
-    { href: 'sessions.html', label: 'Рабочие сессии' },
-    { href: 'payments.html', label: 'Оплата' },
-    { href: 'references.html', label: 'Справочники' },
-    { href: 'users.html', label: 'Пользователи', adminOnly: true }
+    { href: 'dashboard.html', key: 'nav_dashboard' },
+    { href: 'employees.html', key: 'nav_employees' },
+    { href: 'objects.html', key: 'nav_objects' },
+    { href: 'sessions.html', key: 'nav_sessions' },
+    { href: 'payments.html', key: 'nav_payments' },
+    { href: 'references.html', key: 'nav_references' },
+    { href: 'users.html', key: 'nav_users', adminOnly: true }
 ];
 
+let currentNavHref = null;
+
 function renderNav(activeHref) {
+    if (activeHref) currentNavHref = activeHref;
     const nav = document.getElementById('sidebarNav');
     if (!nav) return;
     const user = getCurrentUser();
     const isAdmin = !!user && user.role === 'admin';
     nav.innerHTML = NAV_PAGES.filter(p => !p.adminOnly || isAdmin).map(p =>
-        `<a href="${p.href}" class="sidebar-link${p.href === activeHref ? ' active' : ''}">${p.label}</a>`
+        `<a href="${p.href}" class="sidebar-link${p.href === currentNavHref ? ' active' : ''}">${t(p.key)}</a>`
     ).join('');
     initMobileNav();
     renderSidebarUser();
+
+    if (!renderNav._langListenerAdded) {
+        renderNav._langListenerAdded = true;
+        document.addEventListener('tcs-lang-change', () => renderNav(currentNavHref));
+    }
 }
 
 function renderSidebarUser() {
@@ -120,16 +128,19 @@ function renderSidebarUser() {
         ? `<img class="sidebar-user-avatar" src="${escapeHtml(user.avatar_url)}" alt="">`
         : `<div class="sidebar-user-avatar">${escapeHtml(ini)}</div>`;
     el.innerHTML = `
-        <div class="sidebar-user-info">
-            ${avatar}
-            <div class="sidebar-user-text">
-                <div class="sidebar-user-name">${escapeHtml(label)}</div>
-                <div class="sidebar-user-role">${user.role === 'admin' ? 'Администратор' : 'Наблюдатель'}</div>
+        <div class="sidebar-footer-row">
+            <div class="sidebar-user-info">
+                ${avatar}
+                <div class="sidebar-user-text">
+                    <div class="sidebar-user-name">${escapeHtml(label)}</div>
+                    <div class="sidebar-user-role">${user.role === 'admin' ? t('role_admin') : t('role_viewer')}</div>
+                </div>
             </div>
+            <button class="sidebar-logout-btn" onclick="logout()" title="${t('logout_title')}" type="button">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 14l4-4-4-4M17 10H7M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3"/></svg>
+            </button>
         </div>
-        <button class="sidebar-logout-btn" onclick="logout()" title="Выйти" type="button">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 14l4-4-4-4M17 10H7M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3"/></svg>
-        </button>`;
+        ${langSwitchHtml()}`;
 }
 
 // ==========================================================
@@ -142,7 +153,7 @@ function initMobileNav() {
     toggleBtn.id = 'mobileNavToggle';
     toggleBtn.className = 'mobile-nav-toggle';
     toggleBtn.type = 'button';
-    toggleBtn.setAttribute('aria-label', 'Открыть меню');
+    toggleBtn.setAttribute('aria-label', t('mobile_nav_open'));
     toggleBtn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h14M3 10h14M3 15h14"/></svg>';
     toggleBtn.addEventListener('click', () => document.body.classList.toggle('sidebar-open'));
     document.body.appendChild(toggleBtn);
@@ -182,7 +193,7 @@ function avatarHtml(entity, cssClass) {
 function formatDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
-    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return d.toLocaleDateString(getLang() === 'uk' ? 'uk-UA' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function emptyStateHtml(text) {

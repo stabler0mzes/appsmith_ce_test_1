@@ -135,8 +135,17 @@ body.report-body {
     margin-bottom: 10px;
     border-bottom: 1px solid var(--border);
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sidebar-footer-row {
+    display: flex;
     align-items: center;
     gap: 8px;
+}
+.sidebar-footer .lang-switch {
+    margin-left: 0;
+    align-self: flex-start;
 }
 .sidebar-user-info {
     display: flex;
