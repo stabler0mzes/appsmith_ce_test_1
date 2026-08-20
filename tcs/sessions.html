@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-i18n-doctitle="sessions_doctitle">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,12 +23,12 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <h1>Рабочие сессии</h1>
-            <p>Все рабочие сессии сотрудников и расчёты по ним</p>
+            <h1 data-i18n="sessions_heading">Рабочие сессии</h1>
+            <p data-i18n="sessions_sub">Все рабочие сессии сотрудников и расчёты по ним</p>
         </div>
         <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
-            Обновить
+            <span data-i18n="refresh">Обновить</span>
         </button>
     </div>
 
@@ -39,40 +39,40 @@
     <div class="filters-row" id="filtersRow">
         <button type="button" class="filters-toggle" onclick="toggleFiltersRow('filtersRow')">
             <svg class="filters-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h12M4.5 8h7M7 12.5h2"/></svg>
-            <span>Фильтры</span>
+            <span data-i18n="filters">Фильтры</span>
             <span class="filters-badge">0</span>
             <svg class="filters-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
         </button>
         <div class="filters-content">
             <div class="filter-group">
-                <label for="filterEmployee">Сотрудник</label>
+                <label for="filterEmployee" data-i18n="sessions_filter_employee">Сотрудник</label>
                 <select id="filterEmployee" onchange="loadData()">
-                    <option value="">Все сотрудники</option>
+                    <option value="" data-i18n="sessions_filter_all_employees">Все сотрудники</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label for="filterProject">Объект</label>
+                <label for="filterProject" data-i18n="sessions_filter_project">Объект</label>
                 <select id="filterProject" onchange="loadData()">
-                    <option value="">Все объекты</option>
+                    <option value="" data-i18n="sessions_filter_all_objects">Все объекты</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label for="filterDateFrom">Дата от</label>
+                <label for="filterDateFrom" data-i18n="sessions_filter_date_from">Дата от</label>
                 <input type="date" id="filterDateFrom" onchange="loadData()">
             </div>
             <div class="filter-group">
-                <label for="filterDateTo">Дата до</label>
+                <label for="filterDateTo" data-i18n="sessions_filter_date_to">Дата до</label>
                 <input type="date" id="filterDateTo" onchange="loadData()">
             </div>
             <div class="filter-group">
-                <label for="filterPaid">Оплата</label>
+                <label for="filterPaid" data-i18n="sessions_filter_paid">Оплата</label>
                 <select id="filterPaid" onchange="loadData()">
-                    <option value="">Все</option>
-                    <option value="true">Оплачено</option>
-                    <option value="false">Не оплачено</option>
+                    <option value="" data-i18n="all">Все</option>
+                    <option value="true" data-i18n="sessions_filter_paid_yes">Оплачено</option>
+                    <option value="false" data-i18n="sessions_filter_paid_no">Не оплачено</option>
                 </select>
             </div>
-            <button class="filter-reset-btn" onclick="resetFilters()">Сбросить фильтры</button>
+            <button class="filter-reset-btn" onclick="resetFilters()" data-i18n="filters_reset">Сбросить фильтры</button>
         </div>
     </div>
 
@@ -87,11 +87,11 @@
             <div class="modal-header">
                 <div class="avatar" id="sessionAvatar"></div>
                 <div>
-                    <div class="modal-title" id="sessionTitle">Рабочая сессия</div>
-                    <div class="modal-subtitle">Редактирование сессии</div>
+                    <div class="modal-title" id="sessionTitle" data-i18n="sessions_modal_title">Рабочая сессия</div>
+                    <div class="modal-subtitle" data-i18n="sessions_modal_sub">Редактирование сессии</div>
                 </div>
                 <div class="modal-header-active">
-                    <span class="toggle-label">Оплачено</span>
+                    <span class="toggle-label" data-i18n="sessions_filter_paid_yes">Оплачено</span>
                     <label class="switch">
                         <input type="checkbox" id="sessionIsPaid">
                         <span class="switch-track"></span>
@@ -102,40 +102,40 @@
                 <div class="readonly-info" id="sessionNoteInfo" style="display:none;"></div>
 
                 <div class="form-group">
-                    <label for="sessionProject">Объект <span class="req">*</span></label>
+                    <label for="sessionProject"><span data-i18n="sessions_label_object">Объект</span> <span class="req">*</span></label>
                     <select id="sessionProject" onchange="validateEditSessionForm()">
-                        <option value="">Выберите объект</option>
+                        <option value="" data-i18n="sessions_select_object">Выберите объект</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="sessionRate">Ставка <span class="req">*</span></label>
+                    <label for="sessionRate"><span data-i18n="label_rate">Ставка</span> <span class="req">*</span></label>
                     <select id="sessionRate" onchange="validateEditSessionForm()">
-                        <option value="">Выберите ставку</option>
+                        <option value="" data-i18n="select_rate">Выберите ставку</option>
                     </select>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="sessionStart">Начало <span class="req">*</span></label>
+                        <label for="sessionStart"><span data-i18n="sessions_label_start">Начало</span> <span class="req">*</span></label>
                         <input type="datetime-local" id="sessionStart" oninput="validateEditSessionForm()">
                     </div>
                     <div class="form-group">
-                        <label for="sessionEnd">Окончание</label>
+                        <label for="sessionEnd" data-i18n="sessions_label_end">Окончание</label>
                         <input type="datetime-local" id="sessionEnd">
                     </div>
                 </div>
             </div>
             <div class="modal-error" id="sessionError"></div>
             <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeEditSessionModal()">Отмена</button>
-                <button class="btn action-btn secondary" id="forceEndBtn" onclick="forceEndSession()" style="display:none; flex:1; margin-top:0;">Завершить сессию</button>
-                <button class="btn btn-save" id="sessionSaveBtn" disabled onclick="submitEditSession()">Сохранить</button>
+                <button class="btn btn-cancel" onclick="closeEditSessionModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn action-btn secondary" id="forceEndBtn" onclick="forceEndSession()" style="display:none; flex:1; margin-top:0;" data-i18n="sessions_btn_force_end">Завершить сессию</button>
+                <button class="btn btn-save" id="sessionSaveBtn" disabled onclick="submitEditSession()" data-i18n="save">Сохранить</button>
             </div>
         </div>
         <div class="modal-success" id="sessionSuccess">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
-            <div class="title">Сохранено</div>
+            <div class="title" data-i18n="sessions_saved_title">Сохранено</div>
             <div class="sub" id="sessionSuccessSub"></div>
         </div>
     </div>
@@ -146,13 +146,13 @@
     <div class="modal">
         <div class="modal-header">
             <div>
-                <div class="modal-title">Фото/видео отчёты</div>
+                <div class="modal-title" data-i18n="sessions_media_title">Фото/видео отчёты</div>
                 <div class="modal-subtitle" id="mediaSubtitle"></div>
             </div>
         </div>
         <div class="media-grid" id="mediaGrid"></div>
         <div class="modal-footer">
-            <button class="btn btn-cancel" onclick="closeMediaModal()">Закрыть</button>
+            <button class="btn btn-cancel" onclick="closeMediaModal()" data-i18n="close">Закрыть</button>
         </div>
     </div>
 </div>
@@ -198,7 +198,7 @@
 
     function rateLabel(id) {
         const r = hourlyRates.find(x => x.id === id);
-        return r ? `${r.price_per_hour} грн/час — ${r.position_name || ''}` : '—';
+        return r ? t('rate_label_format', { price: r.price_per_hour, position: r.position_name || '' }) : '—';
     }
 
     // ==========================================================
@@ -235,10 +235,10 @@
             if (!projectsRes.ok) throw new Error('HTTP ' + projectsRes.status);
 
             const data = await sessionsRes.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки данных');
+            if (!data.success) throw new Error(data.error || t('sessions_load_error'));
 
             const projectsData = await projectsRes.json();
-            if (!projectsData.success) throw new Error(projectsData.error || 'Ошибка загрузки объектов');
+            if (!projectsData.success) throw new Error(projectsData.error || t('objects_load_error_generic'));
 
             sessions = data.sessions || [];
             summary = data.summary || summary;
@@ -251,7 +251,7 @@
             renderSessions();
         } catch (e) {
             console.error(e);
-            showError('Не удалось загрузить рабочие сессии. Попробуйте обновить страницу.');
+            showError(t('sessions_load_failed'));
             document.getElementById('sessionsContent').innerHTML = '';
         } finally {
             btn.disabled = false;
@@ -262,14 +262,14 @@
     function populateFilterOptions() {
         const empSelect = document.getElementById('filterEmployee');
         const currentEmp = empSelect.value;
-        empSelect.innerHTML = '<option value="">Все сотрудники</option>' + filterEmployees.map(e =>
+        empSelect.innerHTML = `<option value="">${t('sessions_filter_all_employees')}</option>` + filterEmployees.map(e =>
             `<option value="${e.id}">${escapeHtml(e.full_name)}</option>`
         ).join('');
         empSelect.value = currentEmp;
 
         const projSelect = document.getElementById('filterProject');
         const currentProj = projSelect.value;
-        projSelect.innerHTML = '<option value="">Все объекты</option>' + activeProjects.map(p =>
+        projSelect.innerHTML = `<option value="">${t('sessions_filter_all_objects')}</option>` + activeProjects.map(p =>
             `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
         ).join('');
         projSelect.value = currentProj;
@@ -297,26 +297,26 @@
 
         document.getElementById('statsRow').innerHTML = `
             <div class="stat-card">
-                <div class="stat-label">Сессий</div>
+                <div class="stat-label">${t('sessions_stat_count')}</div>
                 <div class="stat-value">${s.total_sessions}</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Отработано часов</div>
+                <div class="stat-label">${t('sessions_stat_hours')}</div>
                 <div class="stat-value">${hours(s.total_hours)}</div>
             </div>
             <div class="stat-card revenue-card">
                 <div class="revenue-header">
-                    <div class="stat-label">Начислено всего</div>
+                    <div class="stat-label">${t('sessions_stat_total')}</div>
                     <div class="stat-value">${money(s.total_amount)}</div>
                 </div>
                 <div class="revenue-bar"><div class="revenue-bar-paid" style="width:${paidPct}%"></div></div>
                 <div class="revenue-split">
                     <div class="revenue-split-item">
-                        <div class="revenue-split-label">Оплачено</div>
+                        <div class="revenue-split-label">${t('sessions_filter_paid_yes')}</div>
                         <div class="revenue-split-value">${money(s.paid_amount)}</div>
                     </div>
                     <div class="revenue-split-item unpaid">
-                        <div class="revenue-split-label">Не оплачено</div>
+                        <div class="revenue-split-label">${t('sessions_filter_paid_no')}</div>
                         <div class="revenue-split-value">${money(s.unpaid_amount)}</div>
                     </div>
                 </div>
@@ -329,14 +329,14 @@
     function renderSessions() {
         const content = document.getElementById('sessionsContent');
         if (sessions.length === 0) {
-            content.innerHTML = emptyStateHtml('Нет рабочих сессий по заданным фильтрам');
+            content.innerHTML = emptyStateHtml(t('sessions_empty'));
             return;
         }
         content.innerHTML = `<div class="session-list">${sessions.map(sessionRowHtml).join('')}</div>`;
     }
 
     function sessionRowHtml(s) {
-        const timeRange = `${s.start_time || '—'} – ${s.end_time || 'активна'}`;
+        const timeRange = `${s.start_time || '—'} – ${s.end_time || t('sessions_active_label')}`;
         return `
             <div class="session-row${s.is_paid ? ' paid' : ''}" onclick="openEditSessionModal(${s.id})">
                 <div class="session-row-top">
@@ -344,7 +344,7 @@
                         ${employeeAvatarHtml(s)}
                         <div class="session-employee-text">
                             <div class="session-employee-name">${escapeHtml(s.employee_name)}</div>
-                            <div class="session-employee-rate">${s.price_per_hour != null ? s.price_per_hour + ' грн/час' : '—'}</div>
+                            <div class="session-employee-rate">${s.price_per_hour != null ? t('sessions_rate_per_hour', { price: s.price_per_hour }) : '—'}</div>
                         </div>
                     </div>
                     <div class="session-top-right">
@@ -361,10 +361,10 @@
                         <div class="session-time">${timeRange}</div>
                     </div>
                     <div class="session-bottom-right">
-                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ч' : '—'}</div>
+                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ' + t('dashboard_hours_short') : '—'}</div>
                         <div class="session-amount${s.is_paid ? ' paid' : ''}">
                             ${s.calculated_salary != null ? money(s.calculated_salary) : '—'}
-                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} аванс</div>` : ''}
+                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -385,20 +385,20 @@
 
         if (s.note_text) {
             document.getElementById('sessionNoteInfo').style.display = 'flex';
-            document.getElementById('sessionNoteInfo').innerHTML = `<div><b>${s.note_type_name === 'warning' ? 'Предупреждение' : 'Примечание'}:</b> ${escapeHtml(s.note_text)}</div>`;
+            document.getElementById('sessionNoteInfo').innerHTML = `<div><b>${s.note_type_name === 'warning' ? t('sessions_note_warning') : t('sessions_note_note')}:</b> ${escapeHtml(s.note_text)}</div>`;
         } else {
             document.getElementById('sessionNoteInfo').style.display = 'none';
         }
 
         const projSelect = document.getElementById('sessionProject');
-        projSelect.innerHTML = '<option value="">Выберите объект</option>' + activeProjects.map(p =>
+        projSelect.innerHTML = `<option value="">${t('sessions_select_object')}</option>` + activeProjects.map(p =>
             `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
         ).join('');
         projSelect.value = s.project_id;
 
         const rateSelect = document.getElementById('sessionRate');
-        rateSelect.innerHTML = '<option value="">Выберите ставку</option>' + hourlyRates.map(r =>
-            `<option value="${r.id}">${r.price_per_hour} грн/час — ${escapeHtml(r.position_name || '')}</option>`
+        rateSelect.innerHTML = `<option value="">${t('select_rate')}</option>` + hourlyRates.map(r =>
+            `<option value="${r.id}">${t('rate_label_format', { price: r.price_per_hour, position: escapeHtml(r.position_name || '') })}</option>`
         ).join('');
         rateSelect.value = s.hourly_rate_id;
 
@@ -446,7 +446,7 @@
         saving = true;
         const saveBtn = document.getElementById('sessionSaveBtn');
         saveBtn.disabled = true;
-        saveBtn.textContent = 'Сохранение...';
+        saveBtn.textContent = t('saving');
 
         try {
             const res = await authFetch(UPDATE_SESSION_URL, {
@@ -455,28 +455,28 @@
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось сохранить сессию');
+            if (!res.ok || !data.success) throw new Error(data.error || t('sessions_save_error'));
 
             document.getElementById('editSessionForm').style.display = 'none';
-            document.getElementById('sessionSuccessSub').textContent = 'Данные сессии обновлены';
+            document.getElementById('sessionSuccessSub').textContent = t('sessions_saved_sub');
             document.getElementById('sessionSuccess').classList.add('show');
 
             setTimeout(() => { closeEditSessionModal(); loadData(); }, 1200);
         } catch (e) {
             console.error(e);
-            errorBox.textContent = e.message || 'Ошибка при сохранении. Попробуйте ещё раз.';
+            errorBox.textContent = e.message || t('save_error_retry');
             errorBox.classList.add('show');
         } finally {
             saving = false;
             saveBtn.disabled = false;
-            saveBtn.textContent = 'Сохранить';
+            saveBtn.textContent = t('save');
             validateEditSessionForm();
         }
     }
 
     async function forceEndSession() {
         if (!currentSession || saving) return;
-        if (!confirm(`Принудительно завершить сессию сотрудника «${currentSession.employee_name}»?`)) return;
+        if (!confirm(t('sessions_confirm_force_end', { name: currentSession.employee_name }))) return;
 
         saving = true;
         try {
@@ -486,13 +486,13 @@
                 body: JSON.stringify({ session_id: currentSession.id })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось завершить сессию');
+            if (!res.ok || !data.success) throw new Error(data.error || t('sessions_force_end_error'));
 
             closeEditSessionModal();
             loadData();
         } catch (e) {
             console.error(e);
-            document.getElementById('sessionError').textContent = e.message || 'Ошибка при завершении сессии.';
+            document.getElementById('sessionError').textContent = e.message || t('sessions_force_end_error_generic');
             document.getElementById('sessionError').classList.add('show');
         } finally {
             saving = false;
@@ -505,17 +505,17 @@
     async function openMediaModal(sessionId) {
         const s = sessions.find(x => x.id === sessionId);
         document.getElementById('mediaSubtitle').textContent = s ? s.employee_name + ' — ' + s.session_date : '';
-        document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Загрузка...');
+        document.getElementById('mediaGrid').innerHTML = emptyStateHtml(t('loading'));
         document.getElementById('mediaOverlay').classList.add('show');
 
         try {
             const res = await authFetch(GET_MEDIA_URL + '?session_id=' + sessionId);
             const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Ошибка загрузки медиа');
+            if (!data.success) throw new Error(data.error || t('sessions_media_load_error'));
 
             const media = data.media || [];
             if (media.length === 0) {
-                document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Нет файлов');
+                document.getElementById('mediaGrid').innerHTML = emptyStateHtml(t('sessions_media_empty'));
                 return;
             }
             document.getElementById('mediaGrid').innerHTML = media.map(m =>
@@ -525,7 +525,7 @@
             ).join('');
         } catch (e) {
             console.error(e);
-            document.getElementById('mediaGrid').innerHTML = emptyStateHtml('Не удалось загрузить файлы');
+            document.getElementById('mediaGrid').innerHTML = emptyStateHtml(t('sessions_media_load_failed'));
         }
     }
 
@@ -553,6 +553,8 @@
         renderNav('sessions.html');
         loadData();
     }
+
+    document.addEventListener('tcs-lang-change', () => { populateFilterOptions(); renderStats(); renderSessions(); });
 </script>
 
 </body>
