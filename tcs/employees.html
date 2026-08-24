@@ -203,6 +203,48 @@
     </div>
 </div>
 
+<!-- Start session modal -->
+<div class="overlay" id="startSessionOverlay">
+    <div class="modal">
+        <div id="startSessionForm">
+            <div class="modal-header">
+                <div class="avatar" id="startSessionAvatar"></div>
+                <div>
+                    <div class="modal-title" id="startSessionTitle" data-i18n="employees_start_session_btn">Начать смену</div>
+                    <div class="modal-subtitle" data-i18n="employees_start_session_sub">Запуск рабочей сессии за сотрудника</div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="startSessionLoading" class="state-box" style="padding:16px;" data-i18n="loading">Загрузка...</div>
+                <div id="startSessionAlreadyActive" class="readonly-info" style="display:none;"></div>
+                <div id="startSessionPicker" style="display:none;">
+                    <div class="form-group">
+                        <label for="startSessionProject"><span data-i18n="sessions_label_object">Объект</span> <span class="req">*</span></label>
+                        <select id="startSessionProject" onchange="validateStartSessionForm()">
+                            <option value="" data-i18n="sessions_select_object">Выберите объект</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="startSessionDatetime"><span data-i18n="employees_start_session_datetime">Начало смены</span> <span class="req">*</span></label>
+                        <input type="datetime-local" id="startSessionDatetime" oninput="validateStartSessionForm()">
+                        <div class="form-hint" id="startSessionDatetimeHint"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-error" id="startSessionError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeStartSessionModal()" data-i18n="close">Закрыть</button>
+                <button class="btn btn-save" id="startSessionSaveBtn" style="display:none;" disabled onclick="submitStartSession()" data-i18n="employees_start_session_btn">Начать смену</button>
+            </div>
+        </div>
+        <div class="modal-success" id="startSessionSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title" data-i18n="employees_start_session_success_title">Смена начата</div>
+            <div class="sub" id="startSessionSuccessSub"></div>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================================
     // Config
@@ -210,6 +252,8 @@
     const QUEUE_URL = 'https://n8n.vseproi.de/webhook/tcs2-activation-queue';
     const SAVE_ACTIVATION_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-activation';
     const UPDATE_EMPLOYEE_URL = 'https://n8n.vseproi.de/webhook/tcs2-update-employee';
+    const GET_START_STATUS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-start-status';
+    const ADMIN_START_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-admin-start-work-session';
 
     // ==========================================================
     // State
@@ -221,6 +265,8 @@
     let activityDirections = [];
     let currentActivateEmployee = null;
     let currentEditEmployee = null;
+    let currentStartSessionEmployee = null;
+    let startSessionProjects = [];
     let saving = false;
 
     // ==========================================================
@@ -369,7 +415,10 @@
                         <span class="card-meta-value">${escapeHtml(directionLabel(emp.activity_direction_id))}</span>
                     </div>
                 </div>
-                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
+                <div class="action-row">
+                    <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
+                    <button class="action-btn secondary" onclick="openStartSessionModal(${emp.id})">${t('employees_start_session_btn')}</button>
+                </div>
             </div>`;
     }
 
@@ -641,6 +690,127 @@
     }
 
     // ==========================================================
+    // Start session modal (admin starts a session for the employee)
+    // ==========================================================
+    async function openStartSessionModal(employeeId) {
+        currentStartSessionEmployee = activeEmployees.find(e => e.id === employeeId);
+        if (!currentStartSessionEmployee) return;
+        const emp = currentStartSessionEmployee;
+
+        document.getElementById('startSessionAvatar').innerHTML = avatarHtml(emp, 'avatar');
+        document.getElementById('startSessionTitle').textContent = emp.full_name || (emp.name + ' ' + emp.surname);
+        document.getElementById('startSessionError').classList.remove('show');
+        document.getElementById('startSessionForm').style.display = 'block';
+        document.getElementById('startSessionSuccess').classList.remove('show');
+        document.getElementById('startSessionLoading').style.display = 'block';
+        document.getElementById('startSessionAlreadyActive').style.display = 'none';
+        document.getElementById('startSessionPicker').style.display = 'none';
+        document.getElementById('startSessionSaveBtn').style.display = 'none';
+        document.getElementById('startSessionOverlay').classList.add('show');
+
+        try {
+            const res = await authFetch(`${GET_START_STATUS_URL}?employee_id=${emp.id}`, { method: 'GET' });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('employees_start_session_status_error'));
+
+            document.getElementById('startSessionLoading').style.display = 'none';
+
+            if (data.active_session) {
+                document.getElementById('startSessionAlreadyActive').style.display = 'block';
+                document.getElementById('startSessionAlreadyActive').innerHTML =
+                    `<div>${t('employees_start_session_already_active', { project: escapeHtml(data.active_session.project_name), date: data.active_session.start_datetime })}</div>`;
+            } else {
+                startSessionProjects = data.projects || [];
+                const projSelect = document.getElementById('startSessionProject');
+                projSelect.innerHTML = `<option value="">${t('sessions_select_object')}</option>` + startSessionProjects.map(p =>
+                    `<option value="${p.id}">${escapeHtml(p.project_name)}</option>`
+                ).join('');
+
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                document.getElementById('startSessionDatetime').value = now.toISOString().slice(0, 16);
+                document.getElementById('startSessionDatetimeHint').textContent = '';
+
+                document.getElementById('startSessionPicker').style.display = 'block';
+                document.getElementById('startSessionSaveBtn').style.display = 'inline-flex';
+                validateStartSessionForm();
+            }
+        } catch (e) {
+            console.error(e);
+            document.getElementById('startSessionLoading').style.display = 'none';
+            document.getElementById('startSessionError').textContent = e.message || t('employees_start_session_status_error');
+            document.getElementById('startSessionError').classList.add('show');
+        }
+    }
+
+    function closeStartSessionModal() {
+        if (saving) return;
+        document.getElementById('startSessionOverlay').classList.remove('show');
+        currentStartSessionEmployee = null;
+    }
+
+    function validateStartSessionForm() {
+        const project = document.getElementById('startSessionProject').value;
+        const datetimeLocal = document.getElementById('startSessionDatetime').value;
+        const hint = document.getElementById('startSessionDatetimeHint');
+
+        let valid = !!project && !!datetimeLocal;
+
+        if (datetimeLocal && new Date(datetimeLocal).getTime() > Date.now()) {
+            hint.textContent = t('employees_start_session_hint_future');
+            hint.classList.add('error');
+            valid = false;
+        } else {
+            hint.textContent = '';
+            hint.classList.remove('error');
+        }
+
+        document.getElementById('startSessionSaveBtn').disabled = !valid;
+    }
+
+    async function submitStartSession() {
+        if (!currentStartSessionEmployee || saving) return;
+        const projectId = document.getElementById('startSessionProject').value;
+        const datetimeLocal = document.getElementById('startSessionDatetime').value;
+
+        const errorBox = document.getElementById('startSessionError');
+        errorBox.classList.remove('show');
+
+        saving = true;
+        const saveBtn = document.getElementById('startSessionSaveBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = t('employees_start_session_starting');
+
+        try {
+            const res = await authFetch(ADMIN_START_SESSION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    employee_id: currentStartSessionEmployee.id,
+                    project_id: Number(projectId),
+                    start_datetime: new Date(datetimeLocal).toISOString()
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('employees_start_session_error'));
+
+            saving = false;
+            document.getElementById('startSessionForm').style.display = 'none';
+            document.getElementById('startSessionSuccessSub').textContent = t('employees_start_session_success_sub', { name: data.employee_name, project: data.project_name });
+            document.getElementById('startSessionSuccess').classList.add('show');
+
+            setTimeout(() => { closeStartSessionModal(); loadData(); }, 1600);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || t('save_error_retry');
+            errorBox.classList.add('show');
+            saving = false;
+            saveBtn.disabled = false;
+            saveBtn.textContent = t('employees_start_session_btn');
+        }
+    }
+
+    // ==========================================================
     // Overlay dismiss handlers
     // ==========================================================
     document.getElementById('activateOverlay').addEventListener('click', (e) => {
@@ -649,8 +819,11 @@
     document.getElementById('editOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'editOverlay') closeEditModal();
     });
+    document.getElementById('startSessionOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'startSessionOverlay') closeStartSessionModal();
+    });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeActivateModal(); closeEditModal(); }
+        if (e.key === 'Escape') { closeActivateModal(); closeEditModal(); closeStartSessionModal(); }
     });
 
     // ==========================================================

@@ -363,6 +363,18 @@ const I18N_DICT = {
         report_stat_shifts: 'Смен',
         report_stat_hours: 'Часов',
         report_empty_sessions: 'Нет смен по заданным фильтрам',
+
+        // employees.html — admin start session modal
+        employees_start_session_btn: 'Начать смену',
+        employees_start_session_sub: 'Запуск рабочей сессии за сотрудника',
+        employees_start_session_datetime: 'Начало смены',
+        employees_start_session_already_active: 'У сотрудника уже есть активная сессия: {project}, с {date}',
+        employees_start_session_status_error: 'Не удалось получить статус сотрудника',
+        employees_start_session_starting: 'Запуск...',
+        employees_start_session_error: 'Не удалось начать смену',
+        employees_start_session_success_title: 'Смена начата',
+        employees_start_session_success_sub: '{name} начал(а) смену на объекте «{project}»',
+        employees_start_session_hint_future: 'Дата начала не может быть в будущем',
     },
     uk: {
         lang_ru: 'RU',
@@ -714,6 +726,18 @@ const I18N_DICT = {
         report_stat_shifts: 'Змін',
         report_stat_hours: 'Годин',
         report_empty_sessions: 'Немає змін за заданими фільтрами',
+
+        // employees.html — admin start session modal
+        employees_start_session_btn: 'Почати зміну',
+        employees_start_session_sub: "Запуск робочої сесії за співробітника",
+        employees_start_session_datetime: 'Початок зміни',
+        employees_start_session_already_active: "У співробітника вже є активна сесія: {project}, з {date}",
+        employees_start_session_status_error: 'Не вдалося отримати статус співробітника',
+        employees_start_session_starting: 'Запуск...',
+        employees_start_session_error: 'Не вдалося почати зміну',
+        employees_start_session_success_title: 'Зміну розпочато',
+        employees_start_session_success_sub: "{name} розпочав(ла) зміну на об'єкті «{project}»",
+        employees_start_session_hint_future: 'Дата початку не може бути в майбутньому',
     }
 };
 
