@@ -92,6 +92,13 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="userLanguage"><span data-i18n="label_language">Язык</span> <span class="opt">(<span data-i18n="users_language_hint">по умолчанию при входе</span>)</span></label>
+                    <select id="userLanguage">
+                        <option value="ru">Русский</option>
+                        <option value="uk">Українська</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="userEmployee"><span data-i18n="users_label_employee">Привязанный сотрудник</span> <span class="opt">(<span data-i18n="users_employee_hint">для Telegram-уведомлений</span>)</span></label>
                     <select id="userEmployee">
                         <option value="" data-i18n="users_employee_none">— Не привязан —</option>
@@ -196,6 +203,7 @@
         document.getElementById('userPassword').value = '';
         document.getElementById('userPasswordConfirm').value = '';
         document.getElementById('userRole').value = currentUser?.role || 'viewer';
+        document.getElementById('userLanguage').value = currentUser?.preferred_language || 'ru';
 
         const employeeSelect = document.getElementById('userEmployee');
         employeeSelect.innerHTML = `<option value="">${t('users_employee_none')}</option>` + employees.map(e =>
@@ -277,6 +285,7 @@
             password: document.getElementById('userPassword').value,
             full_name: document.getElementById('userFullName').value.trim(),
             role: document.getElementById('userRole').value,
+            preferred_language: document.getElementById('userLanguage').value,
             is_active: currentUser ? document.getElementById('userIsActive').checked : true,
             employee_id: document.getElementById('userEmployee').value || null
         };
