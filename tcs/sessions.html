@@ -130,6 +130,7 @@
             <div class="modal-footer">
                 <button class="btn btn-cancel" onclick="closeEditSessionModal()" data-i18n="cancel">Отмена</button>
                 <button class="btn action-btn secondary" id="forceEndBtn" onclick="forceEndSession()" style="display:none; flex:1; margin-top:0;" data-i18n="sessions_btn_force_end">Завершить сессию</button>
+                <button class="btn action-btn secondary" id="reopenSessionBtn" onclick="reopenSession()" style="display:none; flex:1; margin-top:0;" data-i18n="sessions_btn_reopen">Возобновить сессию</button>
                 <button class="btn btn-save" id="sessionSaveBtn" disabled onclick="submitEditSession()" data-i18n="save">Сохранить</button>
             </div>
         </div>
@@ -165,6 +166,7 @@
     const GET_PROJECTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-projects';
     const UPDATE_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-update-work-session';
     const FORCE_END_URL = 'https://n8n.vseproi.de/webhook/tcs2-force-end-session';
+    const REOPEN_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-reopen-work-session';
     const GET_MEDIA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-media';
 
     // ==========================================================
@@ -406,6 +408,7 @@
         document.getElementById('sessionEnd').value = s.end_datetime_local || '';
 
         document.getElementById('forceEndBtn').style.display = s.end_datetime_local ? 'none' : 'block';
+        document.getElementById('reopenSessionBtn').style.display = s.end_datetime_local ? 'block' : 'none';
 
         document.getElementById('sessionError').classList.remove('show');
         document.getElementById('editSessionForm').style.display = 'block';
@@ -494,6 +497,31 @@
         } catch (e) {
             console.error(e);
             document.getElementById('sessionError').textContent = e.message || t('sessions_force_end_error_generic');
+            document.getElementById('sessionError').classList.add('show');
+            saving = false;
+        }
+    }
+
+    async function reopenSession() {
+        if (!currentSession || saving) return;
+        if (!confirm(t('sessions_confirm_reopen', { name: currentSession.employee_name }))) return;
+
+        saving = true;
+        try {
+            const res = await authFetch(REOPEN_SESSION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentSession.id })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('sessions_reopen_error'));
+
+            saving = false;
+            closeEditSessionModal();
+            loadData();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('sessionError').textContent = e.message || t('sessions_reopen_error_generic');
             document.getElementById('sessionError').classList.add('show');
             saving = false;
         }

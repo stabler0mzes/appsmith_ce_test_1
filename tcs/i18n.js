@@ -201,6 +201,11 @@ const I18N_DICT = {
         sessions_media_load_error: 'Ошибка загрузки медиа',
         sessions_media_load_failed: 'Не удалось загрузить файлы',
         sessions_advance_note: 'аванс',
+        sessions_btn_reopen: 'Возобновить сессию',
+        sessions_confirm_reopen: 'Возобновить закрытую сессию сотрудника «{name}»? Сотрудник снова сможет завершить её сам.',
+        sessions_reopen_error: 'Не удалось возобновить сессию',
+        sessions_reopen_error_generic: 'Ошибка при возобновлении сессии.',
+        sessions_reopened_sub: 'Сессия снова активна',
 
         // payments.html
         payments_doctitle: 'Оплата',
@@ -564,6 +569,11 @@ const I18N_DICT = {
         sessions_media_load_error: 'Помилка завантаження медіа',
         sessions_media_load_failed: 'Не вдалося завантажити файли',
         sessions_advance_note: 'аванс',
+        sessions_btn_reopen: 'Відновити сесію',
+        sessions_confirm_reopen: 'Відновити закриту сесію співробітника «{name}»? Співробітник знову зможе завершити її сам.',
+        sessions_reopen_error: 'Не вдалося відновити сесію',
+        sessions_reopen_error_generic: 'Помилка при відновленні сесії.',
+        sessions_reopened_sub: 'Сесія знову активна',
 
         // payments.html
         payments_doctitle: 'Оплата',
