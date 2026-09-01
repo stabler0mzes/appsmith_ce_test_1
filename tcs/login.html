@@ -16,23 +16,65 @@
         TCS2
         <div id="langSwitchHolder"></div>
     </div>
-    <h1 data-i18n="login_heading">Вход в систему</h1>
-    <p class="login-sub" data-i18n="login_sub">Панель управления TimeCalculateSystem</p>
 
-    <div class="form-group">
-        <label for="loginUsername" data-i18n="login_username_label">Логин</label>
-        <input type="text" id="loginUsername" autocomplete="username">
+    <div id="loginPanel">
+        <h1 data-i18n="login_heading">Вход в систему</h1>
+        <p class="login-sub" data-i18n="login_sub">Панель управления TimeCalculateSystem</p>
+
+        <div class="form-group">
+            <label for="loginUsername" data-i18n="login_username_label">Логин</label>
+            <input type="text" id="loginUsername" autocomplete="username">
+        </div>
+        <div class="form-group">
+            <label for="loginPassword" data-i18n="login_password_label">Пароль</label>
+            <input type="password" id="loginPassword" autocomplete="current-password">
+        </div>
+        <div class="modal-error" id="loginError"></div>
+        <button class="btn btn-save" id="loginSubmitBtn" style="width:100%;" onclick="submitLogin()" type="button" data-i18n="login_submit">Войти</button>
+        <a class="login-link" onclick="showForgotStep1()" data-i18n="login_forgot_link">Забыли логин или пароль?</a>
     </div>
-    <div class="form-group">
-        <label for="loginPassword" data-i18n="login_password_label">Пароль</label>
-        <input type="password" id="loginPassword" autocomplete="current-password">
+
+    <div id="forgotStep1Panel" style="display:none;">
+        <h1 data-i18n="forgot_heading">Восстановление доступа</h1>
+        <p class="login-sub" data-i18n="forgot_sub">Введите номер телефона, привязанный к вашему профилю сотрудника — если найдётся администратор с таким номером, в Telegram придёт логин и код для сброса пароля.</p>
+
+        <div class="form-group">
+            <label for="forgotPhone" data-i18n="forgot_phone_label">Номер телефона</label>
+            <input type="tel" id="forgotPhone" autocomplete="tel" placeholder="+380...">
+        </div>
+        <div class="modal-error" id="forgotStep1Error"></div>
+        <button class="btn btn-save" id="forgotStep1Btn" style="width:100%;" onclick="requestReset()" type="button" data-i18n="forgot_send_code">Отправить код</button>
+        <a class="login-link" onclick="showLoginPanel()" data-i18n="login_back_to_login">← Назад ко входу</a>
     </div>
-    <div class="modal-error" id="loginError"></div>
-    <button class="btn btn-save" id="loginSubmitBtn" style="width:100%;" onclick="submitLogin()" type="button" data-i18n="login_submit">Войти</button>
+
+    <div id="forgotStep2Panel" style="display:none;">
+        <h1 data-i18n="forgot_heading">Восстановление доступа</h1>
+        <div class="modal-success show" id="forgotSentMessage" data-i18n="forgot_sent_message">Если аккаунт с таким номером существует и привязан к Telegram — туда отправлено сообщение с логином и кодом.</div>
+
+        <div class="form-group">
+            <label for="forgotCode" data-i18n="forgot_code_label">Код из Telegram</label>
+            <input type="text" id="forgotCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+        </div>
+        <div class="form-group">
+            <label for="forgotNewPassword" data-i18n="forgot_new_password_label">Новый пароль</label>
+            <input type="password" id="forgotNewPassword" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+            <label for="forgotConfirmPassword" data-i18n="forgot_confirm_password_label">Повторите новый пароль</label>
+            <input type="password" id="forgotConfirmPassword" autocomplete="new-password">
+        </div>
+        <div class="modal-error" id="forgotStep2Error"></div>
+        <button class="btn btn-save" id="forgotStep2Btn" style="width:100%;" onclick="confirmReset()" type="button" data-i18n="forgot_submit">Сохранить новый пароль</button>
+        <a class="login-link" onclick="showLoginPanel()" data-i18n="login_back_to_login">← Назад ко входу</a>
+    </div>
 </div>
 
 <script>
     const LOGIN_URL = 'https://n8n.vseproi.de/webhook/tcs2-login';
+    const REQUEST_RESET_URL = 'https://n8n.vseproi.de/webhook/tcs2-request-password-reset';
+    const CONFIRM_RESET_URL = 'https://n8n.vseproi.de/webhook/tcs2-confirm-password-reset';
+
+    let forgotPhone = '';
 
     if (getAuthToken()) {
         window.location.href = 'dashboard.html';
@@ -46,12 +88,40 @@
             if (e.key === 'Enter') submitLogin();
         });
     });
+    ['forgotPhone'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') requestReset();
+        });
+    });
+    ['forgotCode', 'forgotNewPassword', 'forgotConfirmPassword'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') confirmReset();
+        });
+    });
+
+    function showForgotStep1() {
+        document.getElementById('loginPanel').style.display = 'none';
+        document.getElementById('forgotStep2Panel').style.display = 'none';
+        document.getElementById('forgotStep1Panel').style.display = 'block';
+        document.getElementById('forgotStep1Error').classList.remove('show');
+        document.getElementById('forgotPhone').value = '';
+        document.getElementById('forgotPhone').focus();
+    }
+
+    function showLoginPanel() {
+        document.getElementById('forgotStep1Panel').style.display = 'none';
+        document.getElementById('forgotStep2Panel').style.display = 'none';
+        document.getElementById('loginPanel').style.display = 'block';
+        document.getElementById('loginError').classList.remove('show', 'modal-success');
+        document.getElementById('loginError').classList.add('modal-error');
+    }
 
     async function submitLogin() {
         const username = document.getElementById('loginUsername').value.trim();
         const password = document.getElementById('loginPassword').value;
         const errorBox = document.getElementById('loginError');
-        errorBox.classList.remove('show');
+        errorBox.classList.remove('show', 'modal-success');
+        errorBox.classList.add('modal-error');
 
         if (!username || !password) {
             errorBox.textContent = t('login_error_required');
@@ -81,6 +151,92 @@
             errorBox.classList.add('show');
             btn.disabled = false;
             btn.textContent = t('login_submit');
+        }
+    }
+
+    async function requestReset() {
+        const phone = document.getElementById('forgotPhone').value.trim();
+        const errorBox = document.getElementById('forgotStep1Error');
+        errorBox.classList.remove('show');
+
+        if (!phone) {
+            errorBox.textContent = t('forgot_error_generic');
+            errorBox.classList.add('show');
+            return;
+        }
+
+        const btn = document.getElementById('forgotStep1Btn');
+        btn.disabled = true;
+        btn.textContent = t('forgot_send_code_loading');
+
+        try {
+            const res = await fetch(REQUEST_RESET_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('forgot_error_generic'));
+
+            forgotPhone = phone;
+            document.getElementById('forgotCode').value = '';
+            document.getElementById('forgotNewPassword').value = '';
+            document.getElementById('forgotConfirmPassword').value = '';
+            document.getElementById('forgotStep2Error').classList.remove('show');
+            document.getElementById('forgotStep1Panel').style.display = 'none';
+            document.getElementById('forgotStep2Panel').style.display = 'block';
+            document.getElementById('forgotCode').focus();
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || t('forgot_error_generic');
+            errorBox.classList.add('show');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = t('forgot_send_code');
+        }
+    }
+
+    async function confirmReset() {
+        const code = document.getElementById('forgotCode').value.trim();
+        const newPassword = document.getElementById('forgotNewPassword').value;
+        const confirmPassword = document.getElementById('forgotConfirmPassword').value;
+        const errorBox = document.getElementById('forgotStep2Error');
+        errorBox.classList.remove('show');
+
+        if (newPassword !== confirmPassword) {
+            errorBox.textContent = t('forgot_error_password_mismatch');
+            errorBox.classList.add('show');
+            return;
+        }
+
+        const btn = document.getElementById('forgotStep2Btn');
+        btn.disabled = true;
+        btn.textContent = t('forgot_submit_loading');
+
+        try {
+            const res = await fetch(CONFIRM_RESET_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: forgotPhone, code, new_password: newPassword })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('forgot_error_generic'));
+
+            document.getElementById('forgotStep2Panel').style.display = 'none';
+            document.getElementById('loginPanel').style.display = 'block';
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            const loginError = document.getElementById('loginError');
+            loginError.textContent = t('forgot_success_message');
+            loginError.classList.remove('modal-error');
+            loginError.classList.add('modal-success', 'show');
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || t('forgot_error_generic');
+            errorBox.classList.add('show');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = t('forgot_submit');
         }
     }
 </script>
