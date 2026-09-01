@@ -268,6 +268,10 @@ const I18N_DICT = {
         payments_sending: 'Отправка...',
         payments_create_tx_error: 'Не удалось создать транзакцию',
         payments_create_tx_error_generic: 'Ошибка при создании транзакции. Попробуйте ещё раз.',
+        payments_paid_in_usd: 'Оплачено в долларах',
+        payments_label_exchange_rate: 'Курс, ₴/$',
+        payments_label_usd_amount: 'Сумма, $',
+        payments_usd_rate_suffix: 'по курсу {rate}',
 
         // references.html
         references_doctitle: 'Справочники',
@@ -637,6 +641,10 @@ const I18N_DICT = {
         payments_sending: 'Надсилання...',
         payments_create_tx_error: 'Не вдалося створити транзакцію',
         payments_create_tx_error_generic: 'Помилка при створенні транзакції. Спробуйте ще раз.',
+        payments_paid_in_usd: 'Оплачено в доларах',
+        payments_label_exchange_rate: 'Курс, ₴/$',
+        payments_label_usd_amount: 'Сума, $',
+        payments_usd_rate_suffix: 'за курсом {rate}',
 
         // references.html
         references_doctitle: 'Довідники',

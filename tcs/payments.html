@@ -134,8 +134,28 @@
                 </div>
                 <div class="form-group">
                     <label for="txAmount"><span data-i18n="payments_label_amount">Сумма, грн</span> <span class="req">*</span></label>
-                    <input type="text" id="txAmount" placeholder="0" oninput="validateTxForm()">
+                    <input type="text" id="txAmount" placeholder="0" oninput="onTxAmountInput()">
                     <div class="form-hint" id="txAmountHint"></div>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label" data-i18n="payments_paid_in_usd">Оплачено в долларах</div>
+                        <div class="toggle-sub" id="txUsdEquivalent"></div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="txPaidInUsd" onchange="onTxCurrencyToggle()">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+                <div class="form-row" id="txUsdFields" style="display:none;">
+                    <div class="form-group">
+                        <label for="txExchangeRate" data-i18n="payments_label_exchange_rate">Курс, ₴/$</label>
+                        <input type="text" id="txExchangeRate" oninput="onTxUsdAmountInput()">
+                    </div>
+                    <div class="form-group">
+                        <label for="txUsdAmount" data-i18n="payments_label_usd_amount">Сумма, $</label>
+                        <input type="text" id="txUsdAmount" oninput="onTxUsdAmountInput()">
+                    </div>
                 </div>
             </div>
             <div class="modal-error" id="txError"></div>
@@ -163,6 +183,7 @@
     const ACTIVATION_QUEUE_URL = 'https://n8n.vseproi.de/webhook/tcs2-activation-queue';
     const GET_PAYMENT_REQUESTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-payment-requests';
     const DECLINE_PAYMENT_REQUEST_URL = 'https://n8n.vseproi.de/webhook/tcs2-decline-payment-request';
+    const GET_USD_RATE_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-usd-rate';
 
     // ==========================================================
     // State
@@ -178,6 +199,9 @@
     let txAmountManuallyEdited = false;
     let currentRequestId = null;
     let saving = false;
+    let usdRate = null;
+    let usdRateDate = null;
+    let usdRateLoaded = false;
 
     // ==========================================================
     // Load data
@@ -453,6 +477,11 @@
         document.getElementById('txAmount').value = '';
         document.getElementById('txAmountHint').textContent = '';
         document.getElementById('txAmountHint').classList.remove('error');
+        document.getElementById('txPaidInUsd').checked = false;
+        document.getElementById('txUsdFields').style.display = 'none';
+        document.getElementById('txExchangeRate').value = '';
+        document.getElementById('txUsdAmount').value = '';
+        document.getElementById('txUsdEquivalent').textContent = '';
         document.getElementById('txError').classList.remove('show');
         document.getElementById('txForm').style.display = 'block';
         document.getElementById('txSuccess').classList.remove('show');
@@ -460,6 +489,7 @@
         document.getElementById('txSessionList').innerHTML = `<div class="state-box" style="padding:16px;">${t('payments_select_employee_first')}</div>`;
         document.getElementById('txSelectedSummary').innerHTML = '';
         document.getElementById('txOverlay').classList.add('show');
+        loadUsdRate();
 
         const select = document.getElementById('txEmployeeSelect');
         select.innerHTML = `<option value="">${t('loading')}</option>`;
@@ -488,6 +518,11 @@
         txEmployeeId = document.getElementById('txEmployeeSelect').value || null;
         txAmountManuallyEdited = false;
         document.getElementById('txAmount').value = '';
+        document.getElementById('txPaidInUsd').checked = false;
+        document.getElementById('txUsdFields').style.display = 'none';
+        document.getElementById('txExchangeRate').value = '';
+        document.getElementById('txUsdAmount').value = '';
+        updateTxUsdEquivalent();
 
         if (!txEmployeeId) {
             txSessions = [];
@@ -553,15 +588,74 @@
         if (!txAmountManuallyEdited) {
             document.getElementById('txAmount').value = total ? total.toFixed(2) : '';
         }
+        updateTxUsdEquivalent();
         validateTxForm();
     }
 
-    document.getElementById('txAmount').addEventListener('input', () => { txAmountManuallyEdited = true; });
+    function onTxAmountInput() {
+        txAmountManuallyEdited = true;
+        updateTxUsdEquivalent();
+        validateTxForm();
+    }
+
+    async function loadUsdRate() {
+        if (usdRateLoaded) { updateTxUsdEquivalent(); return; }
+        usdRateLoaded = true;
+        try {
+            const res = await authFetch(GET_USD_RATE_URL, { method: 'GET' });
+            const data = await res.json();
+            if (data.success && data.rate) {
+                usdRate = Number(data.rate);
+                usdRateDate = data.date;
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        updateTxUsdEquivalent();
+    }
+
+    function updateTxUsdEquivalent() {
+        const el = document.getElementById('txUsdEquivalent');
+        const amount = Number(document.getElementById('txAmount').value);
+        if (!usdRate || !amount) {
+            el.textContent = '';
+            return;
+        }
+        el.textContent = `≈ $${(amount / usdRate).toFixed(2)} ${t('payments_usd_rate_suffix', { rate: usdRate })}`;
+    }
+
+    function onTxCurrencyToggle() {
+        const checked = document.getElementById('txPaidInUsd').checked;
+        document.getElementById('txUsdFields').style.display = checked ? 'grid' : 'none';
+        if (checked) {
+            const rateInput = document.getElementById('txExchangeRate');
+            const usdInput = document.getElementById('txUsdAmount');
+            if (!rateInput.value && usdRate) rateInput.value = usdRate.toFixed(4);
+            const amount = Number(document.getElementById('txAmount').value);
+            const rate = Number(rateInput.value);
+            if (!usdInput.value && amount && rate) usdInput.value = (amount / rate).toFixed(2);
+            onTxUsdAmountInput();
+        } else {
+            validateTxForm();
+        }
+    }
+
+    function onTxUsdAmountInput() {
+        const rate = Number(document.getElementById('txExchangeRate').value);
+        const usdAmount = Number(document.getElementById('txUsdAmount').value);
+        if (rate > 0 && usdAmount > 0) {
+            document.getElementById('txAmount').value = (usdAmount * rate).toFixed(2);
+            txAmountManuallyEdited = true;
+        }
+        updateTxUsdEquivalent();
+        validateTxForm();
+    }
 
     function validateTxForm() {
         const amount = Number(document.getElementById('txAmount').value);
         const sessionsSum = getSelectedSessionsSum();
         const hint = document.getElementById('txAmountHint');
+        const paidInUsd = document.getElementById('txPaidInUsd').checked;
 
         if (amount > 0 && amount > sessionsSum) {
             hint.textContent = t('payments_hint_remainder_advance', { amount: money(amount - sessionsSum) });
@@ -574,7 +668,14 @@
             hint.classList.remove('error');
         }
 
-        const valid = !!txEmployeeId && amount > 0 && amount >= sessionsSum;
+        let usdValid = true;
+        if (paidInUsd) {
+            const rate = Number(document.getElementById('txExchangeRate').value);
+            const usdAmount = Number(document.getElementById('txUsdAmount').value);
+            usdValid = rate > 0 && usdAmount > 0;
+        }
+
+        const valid = !!txEmployeeId && amount > 0 && amount >= sessionsSum && usdValid;
         document.getElementById('txSaveBtn').disabled = !valid;
     }
 
@@ -597,11 +698,19 @@
         saveBtn.disabled = true;
         saveBtn.textContent = t('payments_sending');
 
+        const paidInUsd = document.getElementById('txPaidInUsd').checked;
+        const payload = { employee_id: txEmployeeId, session_ids: sessionIds, amount, request_id: currentRequestId || undefined };
+        if (paidInUsd) {
+            payload.paid_currency = 'USD';
+            payload.paid_amount_original = Number(document.getElementById('txUsdAmount').value);
+            payload.exchange_rate = Number(document.getElementById('txExchangeRate').value);
+        }
+
         try {
             const res = await authFetch(CREATE_TRANSACTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ employee_id: txEmployeeId, session_ids: sessionIds, amount, request_id: currentRequestId || undefined })
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || t('payments_create_tx_error'));
