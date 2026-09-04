@@ -144,6 +144,11 @@
                     <input type="tel" id="editPhone" placeholder="+380XXXXXXXXX" oninput="validateEditForm()">
                 </div>
 
+                <div class="form-group">
+                    <label for="editMobilePassword" data-i18n="employees_label_mobile_password">Пароль для мобильного приложения</label>
+                    <input type="password" id="editMobilePassword" autocomplete="new-password" data-i18n-placeholder="employees_placeholder_mobile_password" placeholder="Оставьте пустым, чтобы не менять">
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="editLanguage" data-i18n="label_language">Язык <span class="req">*</span></label>
@@ -604,6 +609,7 @@
         document.getElementById('editName').value = emp.name || '';
         document.getElementById('editSurname').value = emp.surname || '';
         document.getElementById('editPhone').value = emp.phone_number || '';
+        document.getElementById('editMobilePassword').value = '';
         document.getElementById('editLanguage').value = emp.preferred_language || 'ru';
         document.getElementById('editPosition').value = emp.position || '';
         document.getElementById('editContact').value = emp.contact_information || '';
@@ -639,6 +645,8 @@
     async function submitEdit() {
         if (!currentEditEmployee || saving) return;
 
+        const mobilePassword = document.getElementById('editMobilePassword').value;
+
         const payload = {
             employee_id: currentEditEmployee.id,
             name: document.getElementById('editName').value.trim(),
@@ -653,6 +661,7 @@
             is_active: document.getElementById('editIsActive').checked,
             is_admin: document.getElementById('editIsAdmin').checked
         };
+        if (mobilePassword) payload.password = mobilePassword;
 
         const errorBox = document.getElementById('editError');
         errorBox.classList.remove('show');
