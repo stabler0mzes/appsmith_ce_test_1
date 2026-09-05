@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru" data-i18n-doctitle="groups_doctitle">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Группы сотрудников</title>
+<link rel="stylesheet" href="style.css">
+<script src="app.js"></script>
+<script src="i18n.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-footer" id="sidebarUser"></div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-badge">TC</div>
+        TCS2
+    </div>
+</aside>
+
+<div class="main">
+<div class="page">
+    <div class="topbar">
+        <div>
+            <h1 data-i18n="groups_heading">Группы сотрудников</h1>
+            <p data-i18n="groups_sub">Ограничение видимости объектов по бригадам</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadData()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3"/></svg>
+            <span data-i18n="refresh">Обновить</span>
+        </button>
+    </div>
+
+    <div id="errorBox" class="error-box" style="display:none;"></div>
+
+    <div class="section">
+        <div class="section-head-row">
+            <div class="section-head" style="margin-bottom:0;">
+                <h2 data-i18n="groups_section_title">Группы</h2>
+                <span class="count-pill neutral" id="groupsCountPill" style="display:none;"></span>
+            </div>
+            <button class="add-btn" onclick="openGroupModal(null)">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"/></svg>
+                <span data-i18n="groups_add_btn">Добавить группу</span>
+            </button>
+        </div>
+        <div id="groupsContent"></div>
+    </div>
+</div>
+</div>
+
+<!-- Group modal -->
+<div class="overlay" id="groupOverlay">
+    <div class="modal">
+        <div id="groupForm">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="groupTitle" data-i18n="groups_modal_new_title">Новая группа</div>
+                    <div class="modal-subtitle" data-i18n="groups_modal_sub">Название, участники и объекты</div>
+                </div>
+                <div class="modal-header-active">
+                    <span class="toggle-label" data-i18n="status_active">Активна</span>
+                    <label class="switch">
+                        <input type="checkbox" id="groupIsActive" checked>
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="groupName"><span data-i18n="groups_label_name">Название группы</span> <span class="req">*</span></label>
+                    <input type="text" id="groupName" data-i18n-placeholder="groups_placeholder_name" placeholder="Например, Бригада №1" oninput="validateGroupForm()">
+                </div>
+
+                <div class="form-group">
+                    <label><span data-i18n="groups_label_members">Сотрудники в группе</span></label>
+                    <input type="text" class="checklist-search" id="memberSearch" data-i18n-placeholder="groups_search_placeholder" placeholder="Поиск..." oninput="renderMemberChecklist()">
+                    <div class="checklist-box" id="memberChecklist"></div>
+                </div>
+
+                <div class="form-group">
+                    <label><span data-i18n="groups_label_projects">Объекты, которые видит группа</span></label>
+                    <input type="text" class="checklist-search" id="projectSearch" data-i18n-placeholder="groups_search_placeholder" placeholder="Поиск..." oninput="renderProjectChecklist()">
+                    <div class="checklist-box" id="projectChecklist"></div>
+                </div>
+            </div>
+            <div class="modal-error" id="groupError"></div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" onclick="closeGroupModal()" data-i18n="cancel">Отмена</button>
+                <button class="btn btn-save" id="groupSaveBtn" disabled onclick="submitGroup()" data-i18n="save">Сохранить</button>
+            </div>
+        </div>
+        <div class="modal-success" id="groupSuccess">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+            <div class="title" data-i18n="sessions_saved_title">Сохранено</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================================
+    // Config
+    // ==========================================================
+    const GET_GROUPS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-groups';
+    const SAVE_GROUP_URL = 'https://n8n.vseproi.de/webhook/tcs2-save-employee-group';
+
+    // ==========================================================
+    // State
+    // ==========================================================
+    let groups = [];
+    let allEmployees = [];
+    let allProjects = [];
+    let currentGroup = null;
+    let selectedMemberIds = new Set();
+    let selectedProjectIds = new Set();
+    let saving = false;
+
+    // ==========================================================
+    // Load data
+    // ==========================================================
+    async function loadData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.classList.add('spinning');
+        hideError();
+
+        try {
+            const res = await authFetch(GET_GROUPS_URL, { method: 'GET' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || t('groups_load_error'));
+
+            groups = data.groups || [];
+            allEmployees = data.employees || [];
+            allProjects = data.projects || [];
+            renderGroups();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || t('groups_load_error'));
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('spinning');
+        }
+    }
+
+    function hideError() { document.getElementById('errorBox').style.display = 'none'; }
+    function showError(msg) {
+        const box = document.getElementById('errorBox');
+        box.textContent = msg;
+        box.style.display = 'block';
+    }
+
+    // ==========================================================
+    // Groups list
+    // ==========================================================
+    function renderGroups() {
+        const pill = document.getElementById('groupsCountPill');
+        pill.style.display = groups.length > 0 ? 'inline-flex' : 'none';
+        pill.textContent = groups.length;
+
+        const content = document.getElementById('groupsContent');
+        if (groups.length === 0) {
+            content.innerHTML = emptyStateHtml(t('groups_empty'));
+            return;
+        }
+        content.innerHTML = `<div class="ref-list">${groups.map((g) => `
+            <div class="ref-item">
+                <div class="ref-item-main">
+                    <div class="ref-item-title">
+                        ${escapeHtml(g.group_name)}
+                        ${!g.is_active ? `<span class="ref-item-usage">${t('status_inactive')}</span>` : ''}
+                    </div>
+                    <div class="ref-item-sub">${t('groups_counts', { members: g.member_count, projects: g.project_count })}</div>
+                </div>
+                <div class="ref-item-actions">
+                    <button class="action-btn secondary" onclick="openGroupModal(${g.id})">${t('edit')}</button>
+                </div>
+            </div>`).join('')}</div>`;
+    }
+
+    // ==========================================================
+    // Modal
+    // ==========================================================
+    function openGroupModal(id) {
+        currentGroup = id ? groups.find((g) => g.id === id) : null;
+        selectedMemberIds = new Set(currentGroup ? currentGroup.member_ids : []);
+        selectedProjectIds = new Set(currentGroup ? currentGroup.project_ids : []);
+
+        document.getElementById('groupTitle').textContent = currentGroup ? t('groups_edit_title') : t('groups_modal_new_title');
+        document.getElementById('groupName').value = currentGroup?.group_name || '';
+        document.getElementById('groupIsActive').checked = currentGroup ? !!currentGroup.is_active : true;
+        document.getElementById('memberSearch').value = '';
+        document.getElementById('projectSearch').value = '';
+        document.getElementById('groupError').classList.remove('show');
+        document.getElementById('groupForm').style.display = 'block';
+        document.getElementById('groupSuccess').classList.remove('show');
+
+        renderMemberChecklist();
+        renderProjectChecklist();
+        validateGroupForm();
+        document.getElementById('groupOverlay').classList.add('show');
+    }
+
+    function closeGroupModal() {
+        if (saving) return;
+        document.getElementById('groupOverlay').classList.remove('show');
+        currentGroup = null;
+    }
+
+    function validateGroupForm() {
+        document.getElementById('groupSaveBtn').disabled = !document.getElementById('groupName').value.trim();
+    }
+
+    function checklistItemHtml(id, label, checked, toggleFn) {
+        return `<label class="checklist-item">
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="${toggleFn}(${id}, this.checked)">
+            <span>${escapeHtml(label)}</span>
+        </label>`;
+    }
+
+    function renderMemberChecklist() {
+        const query = document.getElementById('memberSearch').value.trim().toLowerCase();
+        const list = allEmployees.filter((e) => !query || e.full_name.toLowerCase().includes(query));
+        const box = document.getElementById('memberChecklist');
+        if (list.length === 0) {
+            box.innerHTML = `<div class="checklist-empty">${t('groups_no_matches')}</div>`;
+            return;
+        }
+        box.innerHTML = list.map((e) => checklistItemHtml(
+            e.id,
+            e.full_name + (!e.is_active ? ' (' + t('status_inactive') + ')' : ''),
+            selectedMemberIds.has(e.id),
+            'toggleMember'
+        )).join('');
+    }
+
+    function renderProjectChecklist() {
+        const query = document.getElementById('projectSearch').value.trim().toLowerCase();
+        const list = allProjects.filter((p) => !query || p.project_name.toLowerCase().includes(query));
+        const box = document.getElementById('projectChecklist');
+        if (list.length === 0) {
+            box.innerHTML = `<div class="checklist-empty">${t('groups_no_matches')}</div>`;
+            return;
+        }
+        box.innerHTML = list.map((p) => checklistItemHtml(
+            p.id,
+            p.project_name + (!p.is_active ? ' (' + t('status_inactive') + ')' : ''),
+            selectedProjectIds.has(p.id),
+            'toggleProject'
+        )).join('');
+    }
+
+    function toggleMember(id, checked) {
+        if (checked) selectedMemberIds.add(id); else selectedMemberIds.delete(id);
+    }
+    function toggleProject(id, checked) {
+        if (checked) selectedProjectIds.add(id); else selectedProjectIds.delete(id);
+    }
+
+    async function submitGroup() {
+        if (saving) return;
+        const errorBox = document.getElementById('groupError');
+        errorBox.classList.remove('show');
+
+        const payload = {
+            group_id: currentGroup?.id || 0,
+            group_name: document.getElementById('groupName').value.trim(),
+            is_active: document.getElementById('groupIsActive').checked,
+            member_ids: Array.from(selectedMemberIds),
+            project_ids: Array.from(selectedProjectIds),
+        };
+
+        saving = true;
+        const btn = document.getElementById('groupSaveBtn');
+        btn.disabled = true;
+        btn.textContent = t('saving');
+
+        try {
+            const res = await authFetch(SAVE_GROUP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('save_error_retry'));
+
+            document.getElementById('groupForm').style.display = 'none';
+            document.getElementById('groupSuccess').classList.add('show');
+            setTimeout(() => { closeGroupModal(); loadData(); }, 1200);
+        } catch (e) {
+            console.error(e);
+            errorBox.textContent = e.message || t('save_error_retry');
+            errorBox.classList.add('show');
+        } finally {
+            saving = false;
+            btn.disabled = false;
+            btn.textContent = t('save');
+        }
+    }
+
+    // ==========================================================
+    // Overlay dismiss handlers
+    // ==========================================================
+    document.getElementById('groupOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'groupOverlay') closeGroupModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeGroupModal();
+    });
+
+    // ==========================================================
+    // Init
+    // ==========================================================
+    if (requireAuth()) {
+        renderNav('employee-groups.html');
+        loadData();
+    }
+
+    document.addEventListener('tcs-lang-change', () => { renderGroups(); });
+</script>
+
+</body>
+</html>

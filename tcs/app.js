@@ -94,6 +94,7 @@ const NAV_PAGES = [
     { href: 'sessions.html', key: 'nav_sessions' },
     { href: 'payments.html', key: 'nav_payments' },
     { href: 'references.html', key: 'nav_references' },
+    { href: 'employee-groups.html', key: 'nav_groups' },
     { href: 'users.html', key: 'nav_users', adminOnly: true }
 ];
 
