@@ -197,6 +197,22 @@ function formatDate(iso) {
     return d.toLocaleDateString(getLang() === 'uk' ? 'uk-UA' : 'ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// Short localized weekday ("Пн"/"Пн") for an ISO-ish date(time) string.
+// Empty string for a missing/unparsable value.
+function weekdayShort(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(getLang() === 'uk' ? 'uk-UA' : 'ru-RU', { weekday: 'short' });
+}
+
+// "Сб, 06.09.2026" — display date prefixed with its weekday, falling back
+// to the plain date if the ISO date is missing/unparsable.
+function dateWithWeekday(displayDate, iso) {
+    const wd = weekdayShort(iso);
+    return wd ? `${wd}, ${displayDate || ''}` : (displayDate || '');
+}
+
 function emptyStateHtml(text) {
     return `
         <div class="state-box">
