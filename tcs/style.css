@@ -839,7 +839,7 @@ body.report-body {
     text-align: right;
 }
 .session-weekday {
-    font-size: 11px;
+    font-size: 11.5px;
     color: var(--text-muted);
 }
 .session-date {
