@@ -423,6 +423,12 @@ const I18N_DICT = {
         employees_start_session_success_title: 'Смена начата',
         employees_start_session_success_sub: '{name} начал(а) смену на объекте «{project}»',
         employees_start_session_hint_future: 'Дата начала не может быть в будущем',
+
+        // employees.html — reset mobile device binding
+        employees_reset_device_btn: 'Сбросить устройство',
+        employees_reset_device_confirm: 'Сбросить привязку устройства мобильного приложения у «{name}»? Нужно, если сотрудник сменил телефон — иначе вход с нового устройства будет отклонён.',
+        employees_reset_device_success: 'Привязка устройства у «{name}» сброшена',
+        employees_reset_device_error: 'Не удалось сбросить привязку устройства',
     },
     uk: {
         lang_ru: 'RU',
@@ -834,6 +840,12 @@ const I18N_DICT = {
         employees_start_session_success_title: 'Зміну розпочато',
         employees_start_session_success_sub: "{name} розпочав(ла) зміну на об'єкті «{project}»",
         employees_start_session_hint_future: 'Дата початку не може бути в майбутньому',
+
+        // employees.html — reset mobile device binding
+        employees_reset_device_btn: 'Скинути пристрій',
+        employees_reset_device_confirm: "Скинути прив'язку пристрою мобільного застосунку у «{name}»? Потрібно, якщо співробітник змінив телефон — інакше вхід з нового пристрою буде відхилено.",
+        employees_reset_device_success: "Прив'язку пристрою у «{name}» скинуто",
+        employees_reset_device_error: "Не вдалося скинути прив'язку пристрою",
     }
 };
 

@@ -259,6 +259,7 @@
     const UPDATE_EMPLOYEE_URL = 'https://n8n.vseproi.de/webhook/tcs2-update-employee';
     const GET_START_STATUS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-start-status';
     const ADMIN_START_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-admin-start-work-session';
+    const RESET_DEVICE_URL = 'https://n8n.vseproi.de/webhook/tcs2-reset-employee-device';
 
     // ==========================================================
     // State
@@ -423,6 +424,7 @@
                 <div class="action-row">
                     <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
                     <button class="action-btn secondary" onclick="openStartSessionModal(${emp.id})">${t('employees_start_session_btn')}</button>
+                    ${emp.device_id ? `<button class="action-btn secondary" onclick="resetDevice(${emp.id})">${t('employees_reset_device_btn')}</button>` : ''}
                 </div>
             </div>`;
     }
@@ -477,7 +479,10 @@
                         <span class="card-meta-value">${escapeHtml(directionLabel(emp.activity_direction_id))}</span>
                     </div>
                 </div>
-                <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
+                <div class="action-row">
+                    <button class="action-btn secondary" onclick="openEditModal(${emp.id})">${t('edit')}</button>
+                    ${emp.device_id ? `<button class="action-btn secondary" onclick="resetDevice(${emp.id})">${t('employees_reset_device_btn')}</button>` : ''}
+                </div>
             </div>`;
     }
 
@@ -695,6 +700,31 @@
             saveBtn.disabled = false;
             saveBtn.textContent = t('save');
             validateEditForm();
+        }
+    }
+
+    // ==========================================================
+    // Reset mobile device binding
+    // ==========================================================
+    async function resetDevice(employeeId) {
+        const emp = activeEmployees.find(e => e.id === employeeId) || inactiveEmployees.find(e => e.id === employeeId);
+        if (!emp) return;
+        const name = emp.full_name || (emp.name + ' ' + emp.surname);
+        if (!window.confirm(t('employees_reset_device_confirm', { name }))) return;
+
+        hideError();
+        try {
+            const res = await authFetch(RESET_DEVICE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ employee_id: employeeId })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || t('employees_reset_device_error'));
+            await loadData();
+        } catch (e) {
+            console.error(e);
+            showError(e.message || t('employees_reset_device_error'));
         }
     }
 
