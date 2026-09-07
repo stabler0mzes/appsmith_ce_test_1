@@ -838,6 +838,10 @@ body.report-body {
     flex-shrink: 0;
     text-align: right;
 }
+.session-weekday {
+    font-size: 11px;
+    color: var(--text-muted);
+}
 .session-date {
     font-size: 12.5px;
     font-weight: 600;
