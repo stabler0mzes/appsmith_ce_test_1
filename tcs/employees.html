@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Сотрудники</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCftPNeaYugFF1A0Xrr3O4FI02YGDASnxg"></script>
 <script src="app.js"></script>
 <script src="i18n.js"></script>
 </head>
@@ -183,6 +184,14 @@
                     <textarea id="editContact" data-i18n-placeholder="employees_placeholder_contact" placeholder="Например, второй номер телефона"></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label for="editCityName"><span data-i18n="employees_label_city">Город</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <input type="text" id="editCityName" data-i18n-placeholder="employees_placeholder_city" placeholder="Например, Львов">
+                    <div class="map-hint" data-i18n="employees_city_map_hint">Кликните по карте или перетащите маркер, чтобы установить точку города</div>
+                    <div class="map-container" id="employeeCityMap"></div>
+                    <div class="map-coords" id="employeeCityCoords" data-i18n="objects_coords_none">Координаты не заданы</div>
+                </div>
+
                 <div class="toggle-row">
                     <div>
                         <div class="toggle-label" data-i18n="employees_toggle_admin">Права администратора</div>
@@ -260,6 +269,7 @@
     const GET_START_STATUS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-employee-start-status';
     const ADMIN_START_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-admin-start-work-session';
     const RESET_DEVICE_URL = 'https://n8n.vseproi.de/webhook/tcs2-reset-employee-device';
+    const EMPLOYEE_CITY_DEFAULT_CENTER = { lat: 49.8397, lng: 24.0297 }; // Львів
 
     // ==========================================================
     // State
@@ -274,6 +284,8 @@
     let currentStartSessionEmployee = null;
     let startSessionProjects = [];
     let saving = false;
+    let employeeCityMap = null;
+    let employeeCityMarker = null;
 
     // ==========================================================
     // Helpers (page-specific)
@@ -587,6 +599,45 @@
     }
 
     // ==========================================================
+    // Employee city map (для доплаты за выезд — тот же паттерн Google
+    // Maps, что и projectMap в objects.html)
+    // ==========================================================
+    function initEmployeeCityMap() {
+        if (employeeCityMap) return;
+        employeeCityMap = new google.maps.Map(document.getElementById('employeeCityMap'), {
+            center: EMPLOYEE_CITY_DEFAULT_CENTER,
+            zoom: 8,
+            streetViewControl: false,
+            fullscreenControl: false,
+            mapTypeControl: true
+        });
+
+        employeeCityMarker = new google.maps.Marker({
+            position: EMPLOYEE_CITY_DEFAULT_CENTER,
+            map: employeeCityMap,
+            draggable: true
+        });
+
+        employeeCityMarker.addListener('dragend', () => {
+            const pos = employeeCityMarker.getPosition();
+            updateEmployeeCityCoords({ lat: pos.lat(), lng: pos.lng() });
+        });
+
+        employeeCityMap.addListener('click', (e) => {
+            const pos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+            employeeCityMarker.setPosition(pos);
+            updateEmployeeCityCoords(pos);
+        });
+    }
+
+    function updateEmployeeCityCoords(latlng) {
+        document.getElementById('employeeCityCoords').textContent =
+            `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+        document.getElementById('employeeCityCoords').dataset.lat = latlng.lat;
+        document.getElementById('employeeCityCoords').dataset.lng = latlng.lng;
+    }
+
+    // ==========================================================
     // Edit modal
     // ==========================================================
     function openEditModal(employeeId) {
@@ -618,6 +669,7 @@
         document.getElementById('editLanguage').value = emp.preferred_language || 'ru';
         document.getElementById('editPosition').value = emp.position || '';
         document.getElementById('editContact').value = emp.contact_information || '';
+        document.getElementById('editCityName').value = emp.city_name || '';
         document.getElementById('editIsActive').checked = !!emp.is_active;
         document.getElementById('editIsAdmin').checked = !!emp.is_admin;
         if (emp.workhour_price_id) rateSelect.value = emp.workhour_price_id;
@@ -629,6 +681,25 @@
 
         validateEditForm();
         document.getElementById('editOverlay').classList.add('show');
+
+        setTimeout(() => {
+            initEmployeeCityMap();
+            const hasCoords = emp.city_latitude != null && emp.city_longitude != null;
+            const center = hasCoords
+                ? { lat: Number(emp.city_latitude), lng: Number(emp.city_longitude) }
+                : EMPLOYEE_CITY_DEFAULT_CENTER;
+            google.maps.event.trigger(employeeCityMap, 'resize');
+            employeeCityMap.setCenter(center);
+            employeeCityMap.setZoom(hasCoords ? 12 : 8);
+            employeeCityMarker.setPosition(center);
+            if (hasCoords) {
+                updateEmployeeCityCoords(center);
+            } else {
+                document.getElementById('employeeCityCoords').textContent = t('objects_coords_none');
+                delete document.getElementById('employeeCityCoords').dataset.lat;
+                delete document.getElementById('employeeCityCoords').dataset.lng;
+            }
+        }, 50);
     }
 
     function closeEditModal() {
@@ -651,6 +722,9 @@
         if (!currentEditEmployee || saving) return;
 
         const mobilePassword = document.getElementById('editMobilePassword').value;
+        const cityCoordsEl = document.getElementById('employeeCityCoords');
+        const cityLat = cityCoordsEl.dataset.lat ? Number(cityCoordsEl.dataset.lat) : null;
+        const cityLng = cityCoordsEl.dataset.lng ? Number(cityCoordsEl.dataset.lng) : null;
 
         const payload = {
             employee_id: currentEditEmployee.id,
@@ -663,6 +737,9 @@
             workhour_price_id: Number(document.getElementById('editRate').value),
             activity_direction_id: Number(document.getElementById('editDirection').value),
             contact_information: document.getElementById('editContact').value.trim() || null,
+            city_name: document.getElementById('editCityName').value.trim() || null,
+            city_latitude: cityLat,
+            city_longitude: cityLng,
             is_active: document.getElementById('editIsActive').checked,
             is_admin: document.getElementById('editIsAdmin').checked
         };

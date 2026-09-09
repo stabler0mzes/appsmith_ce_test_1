@@ -96,6 +96,12 @@
                     <input type="text" id="projectRadius" placeholder="300" oninput="validateProjectForm()">
                 </div>
 
+                <div class="form-group">
+                    <label for="projectTravelAllowance"><span data-i18n="objects_label_travel_allowance">Доплата за выезд, грн</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <input type="text" id="projectTravelAllowance" data-i18n-placeholder="objects_placeholder_travel_allowance" placeholder="Например, 500">
+                    <div class="form-hint" data-i18n="objects_travel_allowance_hint">Начисляется автоматически, если сотрудник работает дальше 50 км от своего города</div>
+                </div>
+
                 <div class="policy-group-title" data-i18n="objects_policy_start">При начале смены</div>
                 <div class="toggle-row">
                     <div>
@@ -299,6 +305,7 @@
         document.getElementById('projectAddress').value = currentProject?.project_address || '';
         document.getElementById('projectDescription').value = currentProject?.project_description || '';
         document.getElementById('projectRadius').value = currentProject?.project_radius ?? 300;
+        document.getElementById('projectTravelAllowance').value = currentProject?.travel_allowance ?? '';
         document.getElementById('projectIsActive').checked = currentProject ? !!currentProject.is_active : true;
         document.getElementById('projectRequireGps').checked = !!currentProject?.require_gps_coordinates;
         document.getElementById('projectRequirePhoto').checked = !!currentProject?.require_photo_report;
@@ -361,6 +368,7 @@
             gps_latitude: lat,
             gps_longitude: lng,
             project_radius: Number(document.getElementById('projectRadius').value),
+            travel_allowance: document.getElementById('projectTravelAllowance').value.trim() ? Number(document.getElementById('projectTravelAllowance').value) : null,
             is_active: document.getElementById('projectIsActive').checked,
             request_media: document.getElementById('projectRequestMedia').checked,
             request_gps: document.getElementById('projectRequestGps').checked,
@@ -425,6 +433,7 @@
                     gps_latitude: project.gps_latitude,
                     gps_longitude: project.gps_longitude,
                     project_radius: project.project_radius,
+                    travel_allowance: project.travel_allowance,
                     is_active: makeActive,
                     request_media: project.request_media,
                     request_gps: project.request_gps,

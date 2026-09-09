@@ -100,6 +100,7 @@
             </div>
             <div class="modal-body">
                 <div class="readonly-info" id="sessionNoteInfo" style="display:none;"></div>
+                <div class="readonly-info" id="sessionTravelAllowanceInfo" style="display:none;"></div>
 
                 <div class="form-group">
                     <label for="sessionProject"><span data-i18n="sessions_label_object">Объект</span> <span class="req">*</span></label>
@@ -383,8 +384,10 @@
                     <div class="session-bottom-right">
                         <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ' + t('dashboard_hours_short') : '—'}</div>
                         <div class="session-amount${s.is_paid ? ' paid' : ''}">
-                            ${s.calculated_salary != null ? money(s.calculated_salary) : '—'}
-                            ${isRejected ? `<div class="session-amount-note rejected">${t('sessions_rejected_badge')}</div>` : (s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : '')}
+                            ${s.calculated_salary != null ? money(Number(s.calculated_salary) + Number(s.travel_allowance_applied || 0)) : '—'}
+                            ${isRejected ? `<div class="session-amount-note rejected">${t('sessions_rejected_badge')}</div>` : ''}
+                            ${s.travel_allowance_applied > 0 ? `<div class="session-amount-note travel">${t('sessions_travel_allowance_note', { base: money(s.calculated_salary), allowance: money(s.travel_allowance_applied) })}</div>` : ''}
+                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -408,6 +411,14 @@
             document.getElementById('sessionNoteInfo').innerHTML = `<div><b>${s.note_type_name === 'warning' ? t('sessions_note_warning') : t('sessions_note_note')}:</b> ${escapeHtml(s.note_text)}</div>`;
         } else {
             document.getElementById('sessionNoteInfo').style.display = 'none';
+        }
+
+        if (s.travel_allowance_applied > 0) {
+            document.getElementById('sessionTravelAllowanceInfo').style.display = 'flex';
+            document.getElementById('sessionTravelAllowanceInfo').innerHTML =
+                `<div><b>${t('sessions_travel_allowance_label')}:</b> ${money(s.travel_allowance_applied)} — ${t('sessions_travel_allowance_auto_hint')}</div>`;
+        } else {
+            document.getElementById('sessionTravelAllowanceInfo').style.display = 'none';
         }
 
         const projSelect = document.getElementById('sessionProject');
