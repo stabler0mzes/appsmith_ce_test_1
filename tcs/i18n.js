@@ -244,6 +244,12 @@ const I18N_DICT = {
         sessions_reopen_error: 'Не удалось возобновить сессию',
         sessions_reopen_error_generic: 'Ошибка при возобновлении сессии.',
         sessions_reopened_sub: 'Сессия снова активна',
+        sessions_toggle_rejected: 'Отклонена',
+        sessions_toggle_rejected_sub: 'Не входит в смету — сотрудник не выполнил требования',
+        sessions_rejection_reason_label: 'Причина отклонения',
+        sessions_rejection_reason_placeholder: 'Например: не выполнен необходимый объём работ',
+        sessions_rejection_reason_required: 'Укажите причину отклонения',
+        sessions_rejected_badge: 'Отклонена — не в смете',
 
         // payments.html
         payments_doctitle: 'Оплата',
@@ -661,6 +667,12 @@ const I18N_DICT = {
         sessions_reopen_error: 'Не вдалося відновити сесію',
         sessions_reopen_error_generic: 'Помилка при відновленні сесії.',
         sessions_reopened_sub: 'Сесія знову активна',
+        sessions_toggle_rejected: 'Відхилена',
+        sessions_toggle_rejected_sub: 'Не входить у кошторис — співробітник не виконав вимоги',
+        sessions_rejection_reason_label: 'Причина відхилення',
+        sessions_rejection_reason_placeholder: 'Наприклад: не виконано необхідний обсяг робіт',
+        sessions_rejection_reason_required: 'Вкажіть причину відхилення',
+        sessions_rejected_badge: 'Відхилена — не в кошторисі',
 
         // payments.html
         payments_doctitle: 'Оплата',

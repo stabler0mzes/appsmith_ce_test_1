@@ -873,6 +873,9 @@ body.report-body {
     color: var(--orange);
     margin-top: 1px;
 }
+.session-amount-note.rejected { color: var(--red); }
+
+.session-row.rejected { opacity: 0.6; }
 
 .session-icons {
     display: flex;
@@ -884,6 +887,12 @@ body.report-body {
 }
 .session-icon-warning {
     color: var(--orange);
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.session-icon-rejected {
+    color: var(--red);
     width: 18px;
     height: 18px;
     flex-shrink: 0;

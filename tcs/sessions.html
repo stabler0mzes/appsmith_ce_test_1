@@ -125,6 +125,21 @@
                         <input type="datetime-local" id="sessionEnd">
                     </div>
                 </div>
+
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label" data-i18n="sessions_toggle_rejected">Отклонена</div>
+                        <div class="toggle-sub" data-i18n="sessions_toggle_rejected_sub">Не входит в смету — сотрудник не выполнил требования</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="sessionRejected" onchange="onRejectedToggle()">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+                <div class="form-group" id="sessionRejectionReasonGroup" style="display:none;">
+                    <label for="sessionRejectionReason"><span data-i18n="sessions_rejection_reason_label">Причина отклонения</span> <span class="req">*</span></label>
+                    <textarea id="sessionRejectionReason" oninput="validateEditSessionForm()" data-i18n-placeholder="sessions_rejection_reason_placeholder" placeholder="Например: не выполнен необходимый объём работ"></textarea>
+                </div>
             </div>
             <div class="modal-error" id="sessionError"></div>
             <div class="modal-footer">
@@ -339,8 +354,9 @@
 
     function sessionRowHtml(s) {
         const timeRange = `${s.start_time || '—'} – ${s.end_time || t('sessions_active_label')}`;
+        const isRejected = s.review_status === 'rejected';
         return `
-            <div class="session-row${s.is_paid ? ' paid' : ''}" onclick="openEditSessionModal(${s.id})">
+            <div class="session-row${s.is_paid ? ' paid' : ''}${isRejected ? ' rejected' : ''}" onclick="openEditSessionModal(${s.id})">
                 <div class="session-row-top">
                     <div class="session-employee">
                         ${employeeAvatarHtml(s)}
@@ -351,6 +367,7 @@
                     </div>
                     <div class="session-top-right">
                         <div class="session-icons">
+                            ${isRejected ? `<svg class="session-icon-rejected" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.rejection_reason || '')}"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>` : ''}
                             ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
                             ${s.media_count > 0 ? `<button class="session-icon-media" onclick="event.stopPropagation(); openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
                         </div>
@@ -367,7 +384,7 @@
                         <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ' + t('dashboard_hours_short') : '—'}</div>
                         <div class="session-amount${s.is_paid ? ' paid' : ''}">
                             ${s.calculated_salary != null ? money(s.calculated_salary) : '—'}
-                            ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : ''}
+                            ${isRejected ? `<div class="session-amount-note rejected">${t('sessions_rejected_badge')}</div>` : (s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : '')}
                         </div>
                     </div>
                 </div>
@@ -408,6 +425,10 @@
         document.getElementById('sessionStart').value = s.start_datetime_local || '';
         document.getElementById('sessionEnd').value = s.end_datetime_local || '';
 
+        document.getElementById('sessionRejected').checked = s.review_status === 'rejected';
+        document.getElementById('sessionRejectionReason').value = s.rejection_reason || '';
+        document.getElementById('sessionRejectionReasonGroup').style.display = s.review_status === 'rejected' ? 'block' : 'none';
+
         document.getElementById('forceEndBtn').style.display = s.end_datetime_local ? 'none' : 'block';
         document.getElementById('reopenSessionBtn').style.display = s.end_datetime_local ? 'block' : 'none';
 
@@ -425,15 +446,34 @@
         currentSession = null;
     }
 
+    function onRejectedToggle() {
+        const checked = document.getElementById('sessionRejected').checked;
+        document.getElementById('sessionRejectionReasonGroup').style.display = checked ? 'block' : 'none';
+        validateEditSessionForm();
+    }
+
     function validateEditSessionForm() {
         const project = document.getElementById('sessionProject').value;
         const rate = document.getElementById('sessionRate').value;
         const start = document.getElementById('sessionStart').value;
-        document.getElementById('sessionSaveBtn').disabled = !(project && rate && start);
+        const rejected = document.getElementById('sessionRejected').checked;
+        const reason = document.getElementById('sessionRejectionReason').value.trim();
+        document.getElementById('sessionSaveBtn').disabled = !(project && rate && start && (!rejected || reason));
     }
 
     async function submitEditSession() {
         if (!currentSession || saving) return;
+
+        const rejected = document.getElementById('sessionRejected').checked;
+        const rejectionReason = document.getElementById('sessionRejectionReason').value.trim();
+        const errorBox = document.getElementById('sessionError');
+        errorBox.classList.remove('show');
+
+        if (rejected && !rejectionReason) {
+            errorBox.textContent = t('sessions_rejection_reason_required');
+            errorBox.classList.add('show');
+            return;
+        }
 
         const payload = {
             session_id: currentSession.id,
@@ -441,11 +481,10 @@
             hourly_rate_id: Number(document.getElementById('sessionRate').value),
             start_datetime: document.getElementById('sessionStart').value,
             end_datetime: document.getElementById('sessionEnd').value || null,
-            is_paid: document.getElementById('sessionIsPaid').checked
+            is_paid: document.getElementById('sessionIsPaid').checked,
+            rejected: rejected,
+            rejection_reason: rejected ? rejectionReason : ''
         };
-
-        const errorBox = document.getElementById('sessionError');
-        errorBox.classList.remove('show');
 
         saving = true;
         const saveBtn = document.getElementById('sessionSaveBtn');
