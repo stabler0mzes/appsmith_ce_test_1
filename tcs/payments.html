@@ -80,6 +80,7 @@
                         <option value="" data-i18n="all">Все</option>
                         <option value="payment" data-i18n="payments_filter_type_payment">Оплата</option>
                         <option value="advance" data-i18n="payments_filter_type_advance">Аванс</option>
+                        <option value="bonus" data-i18n="payments_filter_type_bonus">Бонус</option>
                         <option value="repayment" data-i18n="payments_filter_type_repayment">Погашение долга</option>
                     </select>
                 </div>
@@ -115,7 +116,7 @@
             <div class="modal-header">
                 <div>
                     <div class="modal-title" data-i18n="payments_modal_new_tx_title">Новая транзакция</div>
-                    <div class="modal-subtitle" data-i18n="payments_modal_new_tx_sub">Оплата за смены и/или аванс — одной операцией</div>
+                    <div class="modal-subtitle" data-i18n="payments_modal_new_tx_sub">Оплата за смены, аванс или бонус — одной операцией</div>
                 </div>
             </div>
             <div class="modal-body">
@@ -136,6 +137,16 @@
                     <label for="txAmount"><span data-i18n="payments_label_amount">Сумма, грн</span> <span class="req">*</span></label>
                     <input type="text" id="txAmount" placeholder="0" oninput="onTxAmountInput()">
                     <div class="form-hint" id="txAmountHint"></div>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label" data-i18n="payments_toggle_bonus">Это бонус (не аванс)</div>
+                        <div class="toggle-sub" data-i18n="payments_toggle_bonus_sub">Засчитывается сотруднику как прибыль и не уменьшает будущую зарплату, в отличие от аванса. Недоступно при выборе смен.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="txIsBonus" onchange="onTxBonusToggle()">
+                        <span class="switch-track"></span>
+                    </label>
                 </div>
                 <div class="toggle-row">
                     <div>
@@ -414,6 +425,7 @@
 
     function typeBadge(type) {
         if (type === 'advance') return `<span class="badge badge-admin">${t('payments_filter_type_advance')}</span>`;
+        if (type === 'bonus') return `<span class="badge badge-active">${t('payments_filter_type_bonus')}</span>`;
         if (type === 'repayment') return `<span class="badge badge-active">${t('payments_filter_type_repayment')}</span>`;
         return '';
     }
@@ -477,6 +489,8 @@
         document.getElementById('txAmount').value = '';
         document.getElementById('txAmountHint').textContent = '';
         document.getElementById('txAmountHint').classList.remove('error');
+        document.getElementById('txIsBonus').checked = false;
+        document.getElementById('txIsBonus').disabled = false;
         document.getElementById('txPaidInUsd').checked = false;
         document.getElementById('txUsdFields').style.display = 'none';
         document.getElementById('txExchangeRate').value = '';
@@ -518,6 +532,8 @@
         txEmployeeId = document.getElementById('txEmployeeSelect').value || null;
         txAmountManuallyEdited = false;
         document.getElementById('txAmount').value = '';
+        document.getElementById('txIsBonus').checked = false;
+        document.getElementById('txIsBonus').disabled = false;
         document.getElementById('txPaidInUsd').checked = false;
         document.getElementById('txUsdFields').style.display = 'none';
         document.getElementById('txExchangeRate').value = '';
@@ -588,6 +604,11 @@
         if (!txAmountManuallyEdited) {
             document.getElementById('txAmount').value = total ? total.toFixed(2) : '';
         }
+
+        const bonusCheckbox = document.getElementById('txIsBonus');
+        bonusCheckbox.disabled = selected.length > 0;
+        if (selected.length > 0) bonusCheckbox.checked = false;
+
         updateTxUsdEquivalent();
         validateTxForm();
     }
@@ -595,6 +616,10 @@
     function onTxAmountInput() {
         txAmountManuallyEdited = true;
         updateTxUsdEquivalent();
+        validateTxForm();
+    }
+
+    function onTxBonusToggle() {
         validateTxForm();
     }
 
@@ -656,8 +681,12 @@
         const sessionsSum = getSelectedSessionsSum();
         const hint = document.getElementById('txAmountHint');
         const paidInUsd = document.getElementById('txPaidInUsd').checked;
+        const isBonus = document.getElementById('txIsBonus').checked;
 
-        if (amount > 0 && amount > sessionsSum) {
+        if (amount > 0 && sessionsSum === 0 && isBonus) {
+            hint.textContent = t('payments_hint_full_bonus', { amount: money(amount) });
+            hint.classList.remove('error');
+        } else if (amount > 0 && amount > sessionsSum) {
             hint.textContent = t('payments_hint_remainder_advance', { amount: money(amount - sessionsSum) });
             hint.classList.remove('error');
         } else if (amount > 0 && sessionsSum > 0 && amount < sessionsSum) {
@@ -699,7 +728,8 @@
         saveBtn.textContent = t('payments_sending');
 
         const paidInUsd = document.getElementById('txPaidInUsd').checked;
-        const payload = { employee_id: txEmployeeId, session_ids: sessionIds, amount, request_id: currentRequestId || undefined };
+        const isBonus = document.getElementById('txIsBonus').checked;
+        const payload = { employee_id: txEmployeeId, session_ids: sessionIds, amount, request_id: currentRequestId || undefined, is_bonus: isBonus };
         if (paidInUsd) {
             payload.paid_currency = 'USD';
             payload.paid_amount_original = Number(document.getElementById('txUsdAmount').value);
