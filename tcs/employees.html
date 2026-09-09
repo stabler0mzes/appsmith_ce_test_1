@@ -185,9 +185,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="editCityName"><span data-i18n="employees_label_city">Город</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
-                    <input type="text" id="editCityName" data-i18n-placeholder="employees_placeholder_city" placeholder="Например, Львов">
-                    <div class="map-coords" id="editCityMapSummary" style="margin-top:6px;" data-i18n="objects_coords_none">Координаты не заданы</div>
+                    <label><span data-i18n="employees_label_city">Город</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                    <div class="readonly-info" id="editCityDisplay">Город не задан</div>
                     <button type="button" class="action-btn secondary" style="margin-top:8px;" onclick="openCityMapModal()" data-i18n="employees_city_map_open_btn">Указать на карте</button>
                 </div>
 
@@ -226,6 +225,14 @@
             </div>
         </div>
         <div class="modal-body">
+            <div class="form-group">
+                <label for="cityMapSearchInput"><span data-i18n="employees_label_city">Город</span></label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="cityMapSearchInput" style="flex:1;" data-i18n-placeholder="employees_placeholder_city" placeholder="Например, Львов" onkeydown="if(event.key==='Enter'){event.preventDefault();searchCityOnMap();}">
+                    <button type="button" class="action-btn secondary" id="cityMapSearchBtn" style="flex-shrink:0; margin-top:0;" onclick="searchCityOnMap()" data-i18n="employees_city_search_btn">Поиск</button>
+                </div>
+                <div class="modal-error" id="cityMapSearchError" data-i18n="employees_city_search_not_found">Город не найден</div>
+            </div>
             <div class="map-container" id="employeeCityMap"></div>
             <div class="map-coords" id="employeeCityCoords" data-i18n="objects_coords_none">Координаты не заданы</div>
         </div>
@@ -654,7 +661,6 @@
         coordsEl.textContent = text;
         coordsEl.dataset.lat = latlng.lat;
         coordsEl.dataset.lng = latlng.lng;
-        document.getElementById('editCityMapSummary').textContent = text;
     }
 
     function resetEmployeeCityCoords() {
@@ -662,10 +668,50 @@
         coordsEl.textContent = t('objects_coords_none');
         delete coordsEl.dataset.lat;
         delete coordsEl.dataset.lng;
-        document.getElementById('editCityMapSummary').textContent = t('objects_coords_none');
+    }
+
+    function updateEditCityDisplay(cityName) {
+        document.getElementById('editCityDisplay').textContent = cityName || t('employees_city_not_set');
+    }
+
+    // Геокодинг через OpenStreetMap/Nominatim (бесплатно, без ключа) —
+    // Google Geocoding API для существующего ключа проекта НЕ включён
+    // (проверено напрямую: REQUEST_DENIED "This API is not activated"),
+    // а сама карта (Maps JS API) работает и её включать не требуется.
+    // Если в будущем Google Geocoding включат в консоли — можно
+    // вернуть google.maps.Geocoder(), интерфейс функции не изменится.
+    async function searchCityOnMap() {
+        const query = document.getElementById('cityMapSearchInput').value.trim();
+        const errorEl = document.getElementById('cityMapSearchError');
+        errorEl.classList.remove('show');
+        if (!query) return;
+
+        const searchBtn = document.getElementById('cityMapSearchBtn');
+        searchBtn.disabled = true;
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`);
+            const results = await res.json();
+            if (results && results[0]) {
+                const pos = { lat: Number(results[0].lat), lng: Number(results[0].lon) };
+                initEmployeeCityMap();
+                employeeCityMap.setCenter(pos);
+                employeeCityMap.setZoom(11);
+                employeeCityMarker.setPosition(pos);
+                updateEmployeeCityCoords(pos);
+            } else {
+                errorEl.classList.add('show');
+            }
+        } catch (e) {
+            console.error(e);
+            errorEl.classList.add('show');
+        } finally {
+            searchBtn.disabled = false;
+        }
     }
 
     function openCityMapModal() {
+        document.getElementById('cityMapSearchInput').value = document.getElementById('editCityDisplay').dataset.cityName || '';
+        document.getElementById('cityMapSearchError').classList.remove('show');
         document.getElementById('employeeCityMapOverlay').classList.add('show');
         setTimeout(() => {
             initEmployeeCityMap();
@@ -683,6 +729,9 @@
 
     function closeCityMapModal() {
         document.getElementById('employeeCityMapOverlay').classList.remove('show');
+        const cityName = document.getElementById('cityMapSearchInput').value.trim();
+        document.getElementById('editCityDisplay').dataset.cityName = cityName;
+        updateEditCityDisplay(cityName);
     }
 
     // ==========================================================
@@ -717,7 +766,8 @@
         document.getElementById('editLanguage').value = emp.preferred_language || 'ru';
         document.getElementById('editPosition').value = emp.position || '';
         document.getElementById('editContact').value = emp.contact_information || '';
-        document.getElementById('editCityName').value = emp.city_name || '';
+        document.getElementById('editCityDisplay').dataset.cityName = emp.city_name || '';
+        updateEditCityDisplay(emp.city_name);
 
         const hasCityCoords = emp.city_latitude != null && emp.city_longitude != null;
         if (hasCityCoords) {
@@ -774,7 +824,7 @@
             workhour_price_id: Number(document.getElementById('editRate').value),
             activity_direction_id: Number(document.getElementById('editDirection').value),
             contact_information: document.getElementById('editContact').value.trim() || null,
-            city_name: document.getElementById('editCityName').value.trim() || null,
+            city_name: (document.getElementById('editCityDisplay').dataset.cityName || '').trim() || null,
             city_latitude: cityLat,
             city_longitude: cityLng,
             is_active: document.getElementById('editIsActive').checked,
