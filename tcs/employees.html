@@ -187,9 +187,8 @@
                 <div class="form-group">
                     <label for="editCityName"><span data-i18n="employees_label_city">Город</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
                     <input type="text" id="editCityName" data-i18n-placeholder="employees_placeholder_city" placeholder="Например, Львов">
-                    <div class="map-hint" data-i18n="employees_city_map_hint">Кликните по карте или перетащите маркер, чтобы установить точку города</div>
-                    <div class="map-container" id="employeeCityMap"></div>
-                    <div class="map-coords" id="employeeCityCoords" data-i18n="objects_coords_none">Координаты не заданы</div>
+                    <div class="map-coords" id="editCityMapSummary" style="margin-top:6px;" data-i18n="objects_coords_none">Координаты не заданы</div>
+                    <button type="button" class="action-btn secondary" style="margin-top:8px;" onclick="openCityMapModal()" data-i18n="employees_city_map_open_btn">Указать на карте</button>
                 </div>
 
                 <div class="toggle-row">
@@ -213,6 +212,25 @@
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
             <div class="title" data-i18n="employees_saved_title">Данные сохранены</div>
             <div class="sub" id="editSuccessSub"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee city map modal -->
+<div class="overlay" id="employeeCityMapOverlay">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" data-i18n="employees_city_map_title">Город сотрудника</div>
+                <div class="modal-subtitle" data-i18n="objects_map_hint">Кликните по карте или перетащите маркер, чтобы установить точку объекта</div>
+            </div>
+        </div>
+        <div class="modal-body">
+            <div class="map-container" id="employeeCityMap"></div>
+            <div class="map-coords" id="employeeCityCoords" data-i18n="objects_coords_none">Координаты не заданы</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-save" onclick="closeCityMapModal()" data-i18n="employees_city_map_done_btn">Готово</button>
         </div>
     </div>
 </div>
@@ -631,10 +649,40 @@
     }
 
     function updateEmployeeCityCoords(latlng) {
-        document.getElementById('employeeCityCoords').textContent =
-            `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
-        document.getElementById('employeeCityCoords').dataset.lat = latlng.lat;
-        document.getElementById('employeeCityCoords').dataset.lng = latlng.lng;
+        const text = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+        const coordsEl = document.getElementById('employeeCityCoords');
+        coordsEl.textContent = text;
+        coordsEl.dataset.lat = latlng.lat;
+        coordsEl.dataset.lng = latlng.lng;
+        document.getElementById('editCityMapSummary').textContent = text;
+    }
+
+    function resetEmployeeCityCoords() {
+        const coordsEl = document.getElementById('employeeCityCoords');
+        coordsEl.textContent = t('objects_coords_none');
+        delete coordsEl.dataset.lat;
+        delete coordsEl.dataset.lng;
+        document.getElementById('editCityMapSummary').textContent = t('objects_coords_none');
+    }
+
+    function openCityMapModal() {
+        document.getElementById('employeeCityMapOverlay').classList.add('show');
+        setTimeout(() => {
+            initEmployeeCityMap();
+            const coordsEl = document.getElementById('employeeCityCoords');
+            const hasCoords = coordsEl.dataset.lat && coordsEl.dataset.lng;
+            const center = hasCoords
+                ? { lat: Number(coordsEl.dataset.lat), lng: Number(coordsEl.dataset.lng) }
+                : EMPLOYEE_CITY_DEFAULT_CENTER;
+            google.maps.event.trigger(employeeCityMap, 'resize');
+            employeeCityMap.setCenter(center);
+            employeeCityMap.setZoom(hasCoords ? 12 : 8);
+            employeeCityMarker.setPosition(center);
+        }, 50);
+    }
+
+    function closeCityMapModal() {
+        document.getElementById('employeeCityMapOverlay').classList.remove('show');
     }
 
     // ==========================================================
@@ -670,6 +718,14 @@
         document.getElementById('editPosition').value = emp.position || '';
         document.getElementById('editContact').value = emp.contact_information || '';
         document.getElementById('editCityName').value = emp.city_name || '';
+
+        const hasCityCoords = emp.city_latitude != null && emp.city_longitude != null;
+        if (hasCityCoords) {
+            updateEmployeeCityCoords({ lat: Number(emp.city_latitude), lng: Number(emp.city_longitude) });
+        } else {
+            resetEmployeeCityCoords();
+        }
+
         document.getElementById('editIsActive').checked = !!emp.is_active;
         document.getElementById('editIsAdmin').checked = !!emp.is_admin;
         if (emp.workhour_price_id) rateSelect.value = emp.workhour_price_id;
@@ -681,25 +737,6 @@
 
         validateEditForm();
         document.getElementById('editOverlay').classList.add('show');
-
-        setTimeout(() => {
-            initEmployeeCityMap();
-            const hasCoords = emp.city_latitude != null && emp.city_longitude != null;
-            const center = hasCoords
-                ? { lat: Number(emp.city_latitude), lng: Number(emp.city_longitude) }
-                : EMPLOYEE_CITY_DEFAULT_CENTER;
-            google.maps.event.trigger(employeeCityMap, 'resize');
-            employeeCityMap.setCenter(center);
-            employeeCityMap.setZoom(hasCoords ? 12 : 8);
-            employeeCityMarker.setPosition(center);
-            if (hasCoords) {
-                updateEmployeeCityCoords(center);
-            } else {
-                document.getElementById('employeeCityCoords').textContent = t('objects_coords_none');
-                delete document.getElementById('employeeCityCoords').dataset.lat;
-                delete document.getElementById('employeeCityCoords').dataset.lng;
-            }
-        }, 50);
     }
 
     function closeEditModal() {
@@ -935,11 +972,19 @@
     document.getElementById('editOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'editOverlay') closeEditModal();
     });
+    document.getElementById('employeeCityMapOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'employeeCityMapOverlay') closeCityMapModal();
+    });
     document.getElementById('startSessionOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'startSessionOverlay') closeStartSessionModal();
     });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeActivateModal(); closeEditModal(); closeStartSessionModal(); }
+        if (e.key !== 'Escape') return;
+        if (document.getElementById('employeeCityMapOverlay').classList.contains('show')) {
+            closeCityMapModal();
+            return;
+        }
+        closeActivateModal(); closeEditModal(); closeStartSessionModal();
     });
 
     // ==========================================================
