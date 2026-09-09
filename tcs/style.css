@@ -1170,6 +1170,7 @@ input[type="text"]:focus, input[type="tel"]:focus, input[type="password"]:focus,
     transition: transform 0.15s;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
+.switch input:disabled + .switch-track { opacity: 0.45; cursor: default; }
 .switch input:checked + .switch-track { background: var(--accent); }
 .switch input:checked + .switch-track::before { transform: translateX(16px); }
 

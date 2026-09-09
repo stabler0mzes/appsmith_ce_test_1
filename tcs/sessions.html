@@ -129,7 +129,7 @@
                 <div class="toggle-row">
                     <div>
                         <div class="toggle-label" data-i18n="sessions_toggle_rejected">Отклонена</div>
-                        <div class="toggle-sub" data-i18n="sessions_toggle_rejected_sub">Не входит в смету — сотрудник не выполнил требования</div>
+                        <div class="toggle-sub" id="sessionRejectedSub" data-i18n="sessions_toggle_rejected_sub">Не входит в смету — сотрудник не выполнил требования</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="sessionRejected" onchange="onRejectedToggle()">
@@ -426,8 +426,11 @@
         document.getElementById('sessionEnd').value = s.end_datetime_local || '';
 
         document.getElementById('sessionRejected').checked = s.review_status === 'rejected';
+        document.getElementById('sessionRejected').disabled = !!s.is_paid;
         document.getElementById('sessionRejectionReason').value = s.rejection_reason || '';
+        document.getElementById('sessionRejectionReason').disabled = !!s.is_paid;
         document.getElementById('sessionRejectionReasonGroup').style.display = s.review_status === 'rejected' ? 'block' : 'none';
+        document.getElementById('sessionRejectedSub').textContent = s.is_paid ? t('sessions_toggle_rejected_disabled_paid') : t('sessions_toggle_rejected_sub');
 
         document.getElementById('forceEndBtn').style.display = s.end_datetime_local ? 'none' : 'block';
         document.getElementById('reopenSessionBtn').style.display = s.end_datetime_local ? 'block' : 'none';
