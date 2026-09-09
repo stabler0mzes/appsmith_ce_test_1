@@ -96,10 +96,19 @@
                     <input type="text" id="projectRadius" placeholder="300" oninput="validateProjectForm()">
                 </div>
 
-                <div class="form-group">
-                    <label for="projectTravelAllowance"><span data-i18n="objects_label_travel_allowance">Доплата за выезд, грн</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
-                    <input type="text" id="projectTravelAllowance" data-i18n-placeholder="objects_placeholder_travel_allowance" placeholder="Например, 500">
-                    <div class="form-hint" data-i18n="objects_travel_allowance_hint">Начисляется автоматически, если сотрудник работает дальше 50 км от своего города</div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label" data-i18n="objects_toggle_travel_allowance">Доплата за выезд</div>
+                        <div class="toggle-sub" data-i18n="objects_toggle_travel_allowance_sub">Начисляется автоматически, если сотрудник работает дальше 50 км от своего города</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="projectHasTravelAllowance" onchange="onTravelAllowanceToggle()">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+                <div class="form-group" id="projectTravelAllowanceGroup" style="display:none;">
+                    <label for="projectTravelAllowance"><span data-i18n="objects_label_travel_allowance">Сумма доплаты, грн</span> <span class="req">*</span></label>
+                    <input type="text" id="projectTravelAllowance" data-i18n-placeholder="objects_placeholder_travel_allowance" placeholder="Например, 500" oninput="validateProjectForm()">
                 </div>
 
                 <div class="policy-group-title" data-i18n="objects_policy_start">При начале смены</div>
@@ -305,6 +314,9 @@
         document.getElementById('projectAddress').value = currentProject?.project_address || '';
         document.getElementById('projectDescription').value = currentProject?.project_description || '';
         document.getElementById('projectRadius').value = currentProject?.project_radius ?? 300;
+        const hasTravelAllowance = currentProject?.travel_allowance != null && Number(currentProject.travel_allowance) > 0;
+        document.getElementById('projectHasTravelAllowance').checked = hasTravelAllowance;
+        document.getElementById('projectTravelAllowanceGroup').style.display = hasTravelAllowance ? 'block' : 'none';
         document.getElementById('projectTravelAllowance').value = currentProject?.travel_allowance ?? '';
         document.getElementById('projectIsActive').checked = currentProject ? !!currentProject.is_active : true;
         document.getElementById('projectRequireGps').checked = !!currentProject?.require_gps_coordinates;
@@ -345,11 +357,20 @@
         currentProject = null;
     }
 
+    function onTravelAllowanceToggle() {
+        const checked = document.getElementById('projectHasTravelAllowance').checked;
+        document.getElementById('projectTravelAllowanceGroup').style.display = checked ? 'block' : 'none';
+        validateProjectForm();
+    }
+
     function validateProjectForm() {
         const name = document.getElementById('projectName').value.trim();
         const radius = document.getElementById('projectRadius').value.trim();
         const radiusValid = radius !== '' && Number(radius) > 0;
-        document.getElementById('projectSaveBtn').disabled = !(name && radiusValid);
+        const hasTravelAllowance = document.getElementById('projectHasTravelAllowance').checked;
+        const allowanceValue = document.getElementById('projectTravelAllowance').value.trim();
+        const allowanceValid = !hasTravelAllowance || (allowanceValue !== '' && Number(allowanceValue) > 0);
+        document.getElementById('projectSaveBtn').disabled = !(name && radiusValid && allowanceValid);
     }
 
     async function submitProject() {
@@ -368,7 +389,9 @@
             gps_latitude: lat,
             gps_longitude: lng,
             project_radius: Number(document.getElementById('projectRadius').value),
-            travel_allowance: document.getElementById('projectTravelAllowance').value.trim() ? Number(document.getElementById('projectTravelAllowance').value) : null,
+            travel_allowance: (document.getElementById('projectHasTravelAllowance').checked && document.getElementById('projectTravelAllowance').value.trim())
+                ? Number(document.getElementById('projectTravelAllowance').value)
+                : null,
             is_active: document.getElementById('projectIsActive').checked,
             request_media: document.getElementById('projectRequestMedia').checked,
             request_gps: document.getElementById('projectRequestGps').checked,

@@ -184,10 +184,20 @@
                     <textarea id="editContact" data-i18n-placeholder="employees_placeholder_contact" placeholder="Например, второй номер телефона"></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label><span data-i18n="employees_label_city">Город</span> <span class="opt">(<span data-i18n="optional">необязательно</span>)</span></label>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label" data-i18n="employees_toggle_travel_allowance">Доплата за выезд</div>
+                        <div class="toggle-sub" data-i18n="employees_toggle_travel_allowance_sub">Начисляется автоматически при работе дальше 50 км от города сотрудника</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="editHasTravelAllowance" onchange="onEmployeeTravelAllowanceToggle()">
+                        <span class="switch-track"></span>
+                    </label>
+                </div>
+                <div class="form-group" id="editCityGroup" style="display:none;">
+                    <label><span data-i18n="employees_label_city">Город</span></label>
                     <div class="readonly-info" id="editCityDisplay">Город не задан</div>
-                    <button type="button" class="action-btn secondary" style="margin-top:8px;" onclick="openCityMapModal()" data-i18n="employees_city_map_open_btn">Указать на карте</button>
+                    <button type="button" class="action-btn secondary" style="margin-top:8px;" onclick="openCityMapModal()" data-i18n="employees_city_map_open_btn">Найти на карте</button>
                 </div>
 
                 <div class="toggle-row">
@@ -237,7 +247,7 @@
             <div class="map-coords" id="employeeCityCoords" data-i18n="objects_coords_none">Координаты не заданы</div>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-save" onclick="closeCityMapModal()" data-i18n="employees_city_map_done_btn">Готово</button>
+            <button class="btn btn-save" id="cityMapDoneBtn" onclick="closeCityMapModal()" data-i18n="employees_city_map_done_btn">Готово</button>
         </div>
     </div>
 </div>
@@ -680,11 +690,20 @@
     // а сама карта (Maps JS API) работает и её включать не требуется.
     // Если в будущем Google Geocoding включат в консоли — можно
     // вернуть google.maps.Geocoder(), интерфейс функции не изменится.
+    //
+    // lastResolvedCityText — текст поля поиска на момент последнего
+    // успешного геокодирования (после успеха туда же подставляется полный
+    // адрес из ответа). closeCityMapModal() сверяет с ним текущий текст,
+    // чтобы не гонять повторный запрос, если ничего не поменялось с
+    // прошлого открытия/поиска, и чтобы понять, нужно ли автопоиск при
+    // нажатии "Готово" без явного нажатия "Поиск".
+    let lastResolvedCityText = null;
+
     async function searchCityOnMap() {
         const query = document.getElementById('cityMapSearchInput').value.trim();
         const errorEl = document.getElementById('cityMapSearchError');
         errorEl.classList.remove('show');
-        if (!query) return;
+        if (!query) return false;
 
         const searchBtn = document.getElementById('cityMapSearchBtn');
         searchBtn.disabled = true;
@@ -698,19 +717,25 @@
                 employeeCityMap.setZoom(11);
                 employeeCityMarker.setPosition(pos);
                 updateEmployeeCityCoords(pos);
-            } else {
-                errorEl.classList.add('show');
+                document.getElementById('cityMapSearchInput').value = results[0].display_name;
+                lastResolvedCityText = results[0].display_name;
+                return true;
             }
+            errorEl.classList.add('show');
+            return false;
         } catch (e) {
             console.error(e);
             errorEl.classList.add('show');
+            return false;
         } finally {
             searchBtn.disabled = false;
         }
     }
 
     function openCityMapModal() {
-        document.getElementById('cityMapSearchInput').value = document.getElementById('editCityDisplay').dataset.cityName || '';
+        const existingCityName = document.getElementById('editCityDisplay').dataset.cityName || '';
+        document.getElementById('cityMapSearchInput').value = existingCityName;
+        lastResolvedCityText = existingCityName || null;
         document.getElementById('cityMapSearchError').classList.remove('show');
         document.getElementById('employeeCityMapOverlay').classList.add('show');
         setTimeout(() => {
@@ -727,11 +752,25 @@
         }, 50);
     }
 
-    function closeCityMapModal() {
+    async function closeCityMapModal() {
+        const query = document.getElementById('cityMapSearchInput').value.trim();
+
+        // Название набрано, но ещё не подтверждено поиском (текст не
+        // совпадает с последним успешно найденным) — пробуем найти сами
+        // перед закрытием; если не найдено — не закрываем модалку.
+        if (query && query !== lastResolvedCityText) {
+            const doneBtn = document.getElementById('cityMapDoneBtn');
+            doneBtn.disabled = true;
+            const found = await searchCityOnMap();
+            doneBtn.disabled = false;
+            if (!found) return;
+        }
+
         document.getElementById('employeeCityMapOverlay').classList.remove('show');
         const cityName = document.getElementById('cityMapSearchInput').value.trim();
         document.getElementById('editCityDisplay').dataset.cityName = cityName;
         updateEditCityDisplay(cityName);
+        validateEditForm();
     }
 
     // ==========================================================
@@ -775,6 +814,9 @@
         } else {
             resetEmployeeCityCoords();
         }
+        const hasTravelAllowance = !!(emp.city_name || hasCityCoords);
+        document.getElementById('editHasTravelAllowance').checked = hasTravelAllowance;
+        document.getElementById('editCityGroup').style.display = hasTravelAllowance ? 'block' : 'none';
 
         document.getElementById('editIsActive').checked = !!emp.is_active;
         document.getElementById('editIsAdmin').checked = !!emp.is_admin;
@@ -802,16 +844,28 @@
         const position = document.getElementById('editPosition').value.trim();
         const rate = document.getElementById('editRate').value;
         const direction = document.getElementById('editDirection').value;
-        document.getElementById('editSaveBtn').disabled = !(name && surname && phone && position && rate && direction);
+        const hasTravelAllowance = document.getElementById('editHasTravelAllowance').checked;
+        const cityCoordsEl = document.getElementById('employeeCityCoords');
+        const hasCityCoords = !!(cityCoordsEl.dataset.lat && cityCoordsEl.dataset.lng);
+        const travelAllowanceValid = !hasTravelAllowance || hasCityCoords;
+        document.getElementById('editSaveBtn').disabled = !(name && surname && phone && position && rate && direction && travelAllowanceValid);
+    }
+
+    function onEmployeeTravelAllowanceToggle() {
+        const checked = document.getElementById('editHasTravelAllowance').checked;
+        document.getElementById('editCityGroup').style.display = checked ? 'block' : 'none';
+        validateEditForm();
     }
 
     async function submitEdit() {
         if (!currentEditEmployee || saving) return;
 
         const mobilePassword = document.getElementById('editMobilePassword').value;
+        const hasTravelAllowance = document.getElementById('editHasTravelAllowance').checked;
         const cityCoordsEl = document.getElementById('employeeCityCoords');
-        const cityLat = cityCoordsEl.dataset.lat ? Number(cityCoordsEl.dataset.lat) : null;
-        const cityLng = cityCoordsEl.dataset.lng ? Number(cityCoordsEl.dataset.lng) : null;
+        const cityLat = hasTravelAllowance && cityCoordsEl.dataset.lat ? Number(cityCoordsEl.dataset.lat) : null;
+        const cityLng = hasTravelAllowance && cityCoordsEl.dataset.lng ? Number(cityCoordsEl.dataset.lng) : null;
+        const cityName = hasTravelAllowance ? ((document.getElementById('editCityDisplay').dataset.cityName || '').trim() || null) : null;
 
         const payload = {
             employee_id: currentEditEmployee.id,
@@ -824,7 +878,7 @@
             workhour_price_id: Number(document.getElementById('editRate').value),
             activity_direction_id: Number(document.getElementById('editDirection').value),
             contact_information: document.getElementById('editContact').value.trim() || null,
-            city_name: (document.getElementById('editCityDisplay').dataset.cityName || '').trim() || null,
+            city_name: cityName,
             city_latitude: cityLat,
             city_longitude: cityLng,
             is_active: document.getElementById('editIsActive').checked,
