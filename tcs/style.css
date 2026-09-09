@@ -875,7 +875,7 @@ body.report-body {
 }
 .session-amount-note.rejected { color: var(--red); }
 
-.session-row.rejected { opacity: 0.6; }
+.session-row.rejected { border-left: 3px solid #ff1200; }
 
 .session-icons {
     display: flex;
