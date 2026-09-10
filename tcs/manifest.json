@@ -1,0 +1,15 @@
+{
+    "name": "TCS2 Admin",
+    "short_name": "TCS2 Admin",
+    "description": "Панель администратора TimeCalculateSystem",
+    "start_url": "login.html",
+    "scope": ".",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#e9e9ea",
+    "theme_color": "#17181a",
+    "lang": "ru",
+    "icons": [
+        { "src": "icon-admin.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    ]
+}

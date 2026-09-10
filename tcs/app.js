@@ -52,6 +52,7 @@ async function authFetch(url, options) {
 
 async function logout() {
     const token = getAuthToken();
+    await unsubscribeFromPush();
     clearAuthSession();
     if (token) {
         try {
@@ -137,11 +138,15 @@ function renderSidebarUser() {
                     <div class="sidebar-user-role">${user.role === 'admin' ? t('role_admin') : t('role_viewer')}</div>
                 </div>
             </div>
+            <button class="sidebar-notify-btn" id="sidebarNotifyBtn" onclick="toggleAdminNotifications()" title="${t('notify_title')}" type="button" style="display:none;">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2a5 5 0 00-5 5v3.2c0 .5-.2 1-.5 1.4L3 14h14l-1.5-2.4a2.3 2.3 0 01-.5-1.4V7a5 5 0 00-5-5z"/><path d="M8 17a2 2 0 004 0"/></svg>
+            </button>
             <button class="sidebar-logout-btn" onclick="logout()" title="${t('logout_title')}" type="button">
                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 14l4-4-4-4M17 10H7M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3"/></svg>
             </button>
         </div>
         ${langSwitchHtml()}`;
+    refreshNotifyBtn();
 }
 
 // ==========================================================
@@ -226,3 +231,223 @@ function hideError() {
     if (!box) return;
     box.style.display = 'none';
 }
+
+// ==========================================================
+// Service worker — installable PWA + push transport. Registered
+// unconditionally so it's active on every page (login included), same
+// pattern as TCS2-mobile-app.
+// ==========================================================
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+
+        // A new SW version activates in the background on first reopen after
+        // a deploy (see sw.js CACHE_NAME) but the already-loaded page keeps
+        // running on stale cached assets until it reloads — do that once,
+        // automatically, so a deploy takes effect on the very next reopen
+        // instead of needing a second manual close+reopen.
+        let reloadedForNewWorker = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloadedForNewWorker) return;
+            reloadedForNewWorker = true;
+            window.location.reload();
+        });
+    }
+}
+
+registerServiceWorker();
+
+// ==========================================================
+// Push notifications — same VAPID keypair/push-service as
+// TCS2-mobile-app (see push-service/index.js there), scoped here to
+// admin_users via admin_push_subscriptions instead of employees. Opt-in
+// only, via the bell button in the sidebar footer (renderSidebarUser) —
+// no auto-subscribe on login/install.
+// ==========================================================
+const VAPID_PUBLIC_KEY = 'BFFaOoUQ1puHix2kQFFt0k3kDpOxNEt0y2I-QFwE5TYHQeeqohIOU_gO4ybTw2flSOMRfEtrnU-NKvUbaODveX0';
+const PUSH_SAVE_URL = 'https://n8n.vseproi.de/webhook/tcs2-admin-save-push-subscription';
+const PUSH_DELETE_URL = 'https://n8n.vseproi.de/webhook/tcs2-admin-delete-push-subscription';
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window;
+}
+
+async function getPushSubscription() {
+    if (!pushSupported()) return null;
+    const reg = await navigator.serviceWorker.ready;
+    return reg.pushManager.getSubscription();
+}
+
+// Returns 'subscribed' | 'denied' | 'unsupported' | 'error'.
+async function subscribeToPush() {
+    if (!pushSupported()) return 'unsupported';
+    try {
+        if (Notification.permission === 'denied') return 'denied';
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            });
+        }
+        await authFetch(PUSH_SAVE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription: sub.toJSON() }),
+        });
+        return 'subscribed';
+    } catch (e) {
+        return Notification.permission === 'denied' ? 'denied' : 'error';
+    }
+}
+
+async function unsubscribeFromPush() {
+    if (!pushSupported()) return;
+    try {
+        const sub = await getPushSubscription();
+        if (!sub) return;
+        const endpoint = sub.endpoint;
+        await sub.unsubscribe();
+        await authFetch(PUSH_DELETE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint }),
+        });
+    } catch (e) {
+        // best-effort — nothing to do if this fails
+    }
+}
+
+function refreshNotifyBtn() {
+    const btn = document.getElementById('sidebarNotifyBtn');
+    if (!btn) return;
+    if (!pushSupported()) { btn.style.display = 'none'; return; }
+    btn.style.display = 'flex';
+    getPushSubscription().then((sub) => btn.classList.toggle('active', !!sub));
+}
+
+async function toggleAdminNotifications() {
+    const sub = await getPushSubscription();
+    if (sub) {
+        await unsubscribeFromPush();
+    } else {
+        const result = await subscribeToPush();
+        if (result === 'denied') showError(t('notify_denied'));
+        else if (result === 'error' || result === 'unsupported') showError(t('notify_error'));
+    }
+    refreshNotifyBtn();
+}
+
+// ==========================================================
+// Install banner (every page, persistent, no dismiss) — mirrors
+// TCS2-mobile-app's app.js exactly (see that file for the original
+// rationale/comments): platform-aware, injected straight into
+// document.body, no per-page placeholder markup needed.
+// ==========================================================
+let deferredInstallPrompt = null;
+
+function isStandaloneDisplay() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function isIosDevice() {
+    const ua = navigator.userAgent;
+    return (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 13+ маскируется под Mac
+}
+
+function isIosSafariBrowser() {
+    const ua = navigator.userAgent;
+    return isIosDevice() && /safari/i.test(ua) && !/crios|fxios|edgios|opios|opr\//i.test(ua);
+}
+
+function ensureInstallStepsOverlay() {
+    if (document.getElementById('installStepsOverlay')) return;
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    overlay.id = 'installStepsOverlay';
+    overlay.innerHTML = `<div class="modal">
+        <div class="modal-header"><div class="modal-title">${escapeHtml(t('install_steps_title'))}</div></div>
+        <div class="modal-body">
+            <div class="install-step"><div class="install-step-num">1</div><div class="install-step-text">${escapeHtml(t('install_step_1'))}</div></div>
+            <div class="install-step"><div class="install-step-num">2</div><div class="install-step-text">${escapeHtml(t('install_step_2'))}</div></div>
+            <div class="install-step"><div class="install-step-num">3</div><div class="install-step-text">${escapeHtml(t('install_step_3'))}</div></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-cancel" onclick="closeInstallStepsOverlay()">${escapeHtml(t('close'))}</button>
+        </div>
+    </div>`;
+    document.body.appendChild(overlay);
+}
+
+function renderInstallBanner() {
+    let banner = document.getElementById('installBanner');
+    const shouldShow = !isStandaloneDisplay() && (deferredInstallPrompt || isIosSafariBrowser());
+
+    if (!shouldShow) {
+        if (banner) banner.remove();
+        document.body.classList.remove('has-install-banner');
+        return;
+    }
+
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'installBanner';
+        banner.className = 'install-banner';
+        document.body.appendChild(banner);
+    }
+    document.body.classList.add('has-install-banner');
+
+    if (deferredInstallPrompt) {
+        banner.innerHTML = `
+            <div class="install-banner-text">${escapeHtml(t('install_hint_text_android'))}</div>
+            <button type="button" class="install-banner-btn" onclick="triggerInstallPrompt()">${escapeHtml(t('install_hint_install_btn'))}</button>
+        `;
+        return;
+    }
+
+    // isIosSafariBrowser() — гарантировано веткой shouldShow выше
+    banner.innerHTML = `
+        <div class="install-banner-text">${escapeHtml(t('install_hint_text_ios'))}</div>
+        <button type="button" class="install-banner-btn" onclick="openInstallStepsOverlay()">${escapeHtml(t('install_hint_how_btn'))}</button>
+    `;
+    ensureInstallStepsOverlay();
+}
+
+async function triggerInstallPrompt() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    renderInstallBanner();
+}
+
+function openInstallStepsOverlay() {
+    ensureInstallStepsOverlay();
+    document.getElementById('installStepsOverlay').classList.add('show');
+}
+function closeInstallStepsOverlay() {
+    const el = document.getElementById('installStepsOverlay');
+    if (el) el.classList.remove('show');
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    renderInstallBanner();
+});
+
+window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    renderInstallBanner();
+});
+
+document.addEventListener('DOMContentLoaded', () => renderInstallBanner());

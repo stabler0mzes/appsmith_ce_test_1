@@ -197,6 +197,23 @@ body.report-body {
 .sidebar-logout-btn:hover { background: #f5f5f6; color: var(--red); }
 .sidebar-logout-btn svg { width: 16px; height: 16px; }
 
+.sidebar-notify-btn {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.sidebar-notify-btn:hover { background: #f5f5f6; color: var(--text); }
+.sidebar-notify-btn.active { color: var(--accent); }
+.sidebar-notify-btn svg { width: 16px; height: 16px; }
+
 /* Login page */
 .login-body {
     width: 100%;
@@ -310,6 +327,68 @@ body.report-body {
 
     .main { padding: 72px 16px 60px; }
 }
+
+/* Install banner (persistent, all pages, no dismiss) — position:fixed
+   deliberately: both the default `body` (sidebar layout) and `.login-body`
+   use `display:flex` with no `flex-direction` set (defaults to row), so an
+   in-flow sibling would land beside the sidebar/login card instead of
+   above it. Fixed removes it from that flow entirely; the sidebar's own
+   `height:100vh`/sticky positioning and the mobile hamburger's fixed
+   `top` are compensated separately below since body padding alone
+   doesn't reach position:fixed descendants. z-index kept below .overlay
+   (50) so an open modal still visually covers the banner. */
+body.has-install-banner { padding-top: 54px; }
+body.has-install-banner .sidebar { height: calc(100vh - 54px); }
+body.has-install-banner .mobile-nav-toggle { top: 68px; }
+.install-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--accent);
+    color: var(--accent-text);
+    padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+    font-size: 12.5px;
+}
+.install-banner-text { flex: 1; }
+.install-banner-btn {
+    background: var(--accent-text);
+    color: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.install-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+.install-step-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.install-step-text { font-size: 13px; }
 
 .page {
     max-width: 1080px;
