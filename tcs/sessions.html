@@ -92,13 +92,6 @@
                     <div class="modal-title" id="sessionTitle" data-i18n="sessions_modal_title">Рабочая сессия</div>
                     <div class="modal-subtitle" data-i18n="sessions_modal_sub">Редактирование сессии</div>
                 </div>
-                <div class="modal-header-active">
-                    <span class="toggle-label" data-i18n="sessions_filter_paid_yes">Оплачено</span>
-                    <label class="switch">
-                        <input type="checkbox" id="sessionIsPaid">
-                        <span class="switch-track"></span>
-                    </label>
-                </div>
             </div>
             <div class="modal-body">
                 <div class="readonly-info" id="sessionNoteInfo" style="display:none;"></div>
@@ -420,7 +413,6 @@
 
         document.getElementById('sessionAvatar').outerHTML = employeeAvatarHtml(s).replace('class="avatar"', 'class="avatar" id="sessionAvatar"');
         document.getElementById('sessionTitle').textContent = s.employee_name;
-        document.getElementById('sessionIsPaid').checked = !!s.is_paid;
 
         if (s.note_text) {
             document.getElementById('sessionNoteInfo').style.display = 'flex';
@@ -511,7 +503,6 @@
             hourly_rate_id: Number(document.getElementById('sessionRate').value),
             start_datetime: document.getElementById('sessionStart').value,
             end_datetime: document.getElementById('sessionEnd').value || null,
-            is_paid: document.getElementById('sessionIsPaid').checked,
             rejected: rejected,
             rejection_reason: rejected ? rejectionReason : ''
         };
