@@ -211,7 +211,11 @@ body.report-body {
     cursor: pointer;
 }
 .sidebar-notify-btn:hover { background: #f5f5f6; color: var(--text); }
-.sidebar-notify-btn.active { color: var(--accent); }
+.sidebar-notify-btn.active,
+.sidebar-notify-btn.active:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+}
 .sidebar-notify-btn svg { width: 16px; height: 16px; }
 
 /* Login page */
