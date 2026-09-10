@@ -126,6 +126,13 @@
         return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
 
+    // Whole-hours rounding for the top summary card — HH:MM is precise but
+    // reads as noise on a totals card (a stat-card already labeled "Часов"
+    // above it), unlike per-session rows where the minutes matter.
+    function wholeHours(n) {
+        return String(Math.round(n == null ? 0 : Number(n)));
+    }
+
     // ==========================================================
     // Load data
     // ==========================================================
@@ -398,7 +405,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">${t('report_stat_hours')}</div>
-                    <div class="stat-value">${hours(summary.total_hours)}</div>
+                    <div class="stat-value">${wholeHours(summary.total_hours)}</div>
                 </div>
             </div>`;
 

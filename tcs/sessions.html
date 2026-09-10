@@ -223,6 +223,13 @@
         return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
 
+    // Whole-hours rounding for the top summary card — HH:MM is precise but
+    // reads as noise on a totals card (a stat-card already labeled "Часов"
+    // above it), unlike per-session rows where the minutes matter.
+    function wholeHours(n) {
+        return String(Math.round(n == null ? 0 : Number(n)));
+    }
+
     function rateLabel(id) {
         const r = hourlyRates.find(x => x.id === id);
         return r ? t('rate_label_format', { price: r.price_per_hour, position: r.position_name || '' }) : '—';
@@ -329,7 +336,7 @@
             </div>
             <div class="stat-card">
                 <div class="stat-label">${t('sessions_stat_hours')}</div>
-                <div class="stat-value">${hours(s.total_hours)}</div>
+                <div class="stat-value">${wholeHours(s.total_hours)}</div>
             </div>
             <div class="stat-card revenue-card">
                 <div class="revenue-header">
