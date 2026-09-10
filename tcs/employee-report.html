@@ -115,8 +115,15 @@
         return Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' грн';
     }
 
+    // Decimal hours (4.5) -> "HH:MM" (04:30). Round to the nearest minute
+    // rather than truncate — duration_hours can carry float noise from the
+    // DB (EXTRACT(EPOCH ...)/3600), which would otherwise show "01:59"
+    // instead of "02:00".
     function hours(n) {
-        return (n == null ? 0 : Number(n)).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const totalMinutes = Math.round((n == null ? 0 : Number(n)) * 60);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
 
     // ==========================================================
@@ -421,7 +428,7 @@
                         <div class="session-time">${timeRange}</div>
                     </div>
                     <div class="session-bottom-right">
-                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) + ' ' + t('dashboard_hours_short') : '—'}</div>
+                        <div class="session-hours">${s.duration_hours != null ? hours(s.duration_hours) : '—'}</div>
                         <div class="session-amount${s.is_paid ? ' paid' : ''}">
                             ${s.calculated_salary != null ? money(s.calculated_salary) : '—'}
                             ${s.debt_applied > 0 ? `<div class="session-amount-note">−${money(s.debt_applied)} ${t('sessions_advance_note')}</div>` : ''}

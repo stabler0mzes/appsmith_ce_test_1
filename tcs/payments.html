@@ -307,6 +307,17 @@
         return Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' грн';
     }
 
+    // Decimal hours (4.5) -> "HH:MM" (04:30). Round to the nearest minute
+    // rather than truncate — duration_hours can carry float noise from the
+    // DB (EXTRACT(EPOCH ...)/3600), which would otherwise show "01:59"
+    // instead of "02:00".
+    function hours(n) {
+        const totalMinutes = Math.round((n == null ? 0 : Number(n)) * 60);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    }
+
     // ==========================================================
     // Stats
     // ==========================================================
@@ -578,7 +589,7 @@
                 <input type="checkbox" checked data-session-id="${s.id}" onchange="updateTxSummary()">
                 <div class="session-picker-info">
                     <div class="session-picker-project">${escapeHtml(s.project_name)}</div>
-                    <div class="session-picker-meta">${s.session_date} · ${s.duration_hours} ${t('dashboard_hours_short')}</div>
+                    <div class="session-picker-meta">${s.session_date} · ${hours(s.duration_hours)}</div>
                 </div>
                 <div class="session-picker-amount">${money(s.calculated_salary)}</div>
             </label>`).join('');

@@ -101,8 +101,6 @@ const I18N_DICT = {
         dashboard_stat_employees: 'Сотрудников на смене',
         dashboard_since: 'С {time}',
         dashboard_in_progress: 'В работе',
-        dashboard_hours_short: 'ч',
-        dashboard_minutes_short: 'м',
 
         // employees.html
         employees_doctitle: 'Сотрудники',
@@ -558,8 +556,6 @@ const I18N_DICT = {
         dashboard_stat_employees: 'Співробітників на зміні',
         dashboard_since: 'З {time}',
         dashboard_in_progress: 'У роботі',
-        dashboard_hours_short: 'год',
-        dashboard_minutes_short: 'хв',
 
         // employees.html
         employees_doctitle: 'Співробітники',

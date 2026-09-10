@@ -146,14 +146,18 @@
     // ==========================================================
     // Live duration ticker
     // ==========================================================
+    // "HH:MM" — same format as everywhere else worked time is shown
+    // (see sessions.html/payments.html/employee-report.html's hours()),
+    // just computed live from a start timestamp instead of a stored
+    // duration_hours (this session is still open, so it has none yet).
     function formatDuration(startIso) {
         const start = new Date(startIso).getTime();
         if (isNaN(start)) return '—';
         const diffMs = Math.max(0, Date.now() - start);
         const totalMinutes = Math.floor(diffMs / 60000);
-        const hours = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return `${hours}${t('dashboard_hours_short')} ${minutes}${t('dashboard_minutes_short')}`;
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
 
     function tickDurations() {
