@@ -228,6 +228,23 @@
         return r ? t('rate_label_format', { price: r.price_per_hour, position: r.position_name || '' }) : '—';
     }
 
+    // System-generated warnings (TCS2 - Close Work Session / TCS2 - Auto
+    // Close Forgotten Sessions) store a language-neutral marker in
+    // note_text instead of a hardcoded-Russian sentence, so the admin
+    // panel can render it in whichever language it's currently set to.
+    // Anything that doesn't match a known marker is shown as-is — either
+    // a legacy note created before this change, or genuine free text.
+    function noteTextDisplay(noteText) {
+        if (!noteText) return '';
+        if (noteText.indexOf('SYSNOTE:force_end:') === 0) {
+            return t('sessions_note_force_end_warning', { date: noteText.slice('SYSNOTE:force_end:'.length) });
+        }
+        if (noteText === 'SYSNOTE:auto_close') {
+            return t('sessions_note_auto_close_warning');
+        }
+        return noteText;
+    }
+
     // ==========================================================
     // Load data
     // ==========================================================
@@ -378,7 +395,7 @@
                     <div class="session-top-right">
                         <div class="session-icons">
                             ${isRejected ? `<svg class="session-icon-rejected" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.rejection_reason || '')}"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>` : ''}
-                            ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.note_text)}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
+                            ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(noteTextDisplay(s.note_text))}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
                             ${s.media_count > 0 ? `<button class="session-icon-media" onclick="event.stopPropagation(); openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
                         </div>
                         <div class="session-project">${escapeHtml(s.project_name)}</div>
@@ -416,7 +433,7 @@
 
         if (s.note_text) {
             document.getElementById('sessionNoteInfo').style.display = 'flex';
-            document.getElementById('sessionNoteInfo').innerHTML = `<div><b>${s.note_type_name === 'warning' ? t('sessions_note_warning') : t('sessions_note_note')}:</b> ${escapeHtml(s.note_text)}</div>`;
+            document.getElementById('sessionNoteInfo').innerHTML = `<div><b>${s.note_type_name === 'warning' ? t('sessions_note_warning') : t('sessions_note_note')}:</b> ${escapeHtml(noteTextDisplay(s.note_text))}</div>`;
         } else {
             document.getElementById('sessionNoteInfo').style.display = 'none';
         }
