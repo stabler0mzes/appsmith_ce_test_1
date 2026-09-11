@@ -710,6 +710,23 @@ body.has-install-banner .mobile-nav-toggle { top: 68px; }
 .stat-card.unpaid .stat-value { color: var(--red); font-size: 25px; }
 
 @media (max-width: 860px) {
+    /* Force exactly 2 columns instead of relying on auto-fit, which on a
+       narrow phone often can't fit even two 160px-minimum cards side by
+       side and silently collapses to one per row — wastes a lot of
+       vertical space on the dashboard's summary cards. */
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .stats-row .stat-card {
+        padding: 12px 14px;
+    }
+    .stats-row .stat-card .stat-value {
+        font-size: 26px;
+    }
+    .stats-row .stat-card.unpaid .stat-value {
+        font-size: 20px;
+    }
+
     .stats-row-list {
         display: flex;
         flex-direction: column;
