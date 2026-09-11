@@ -169,6 +169,26 @@
     </div>
 </div>
 
+<!-- Session chat modal -->
+<div class="overlay" id="commentsOverlay">
+    <div class="modal chat-modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" data-i18n="sessions_comments_title">Обсуждение смены</div>
+                <div class="modal-subtitle" id="commentsSubtitle"></div>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+            <textarea id="chatInput" rows="1" data-i18n-placeholder="sessions_comments_placeholder" placeholder="Написать сообщение..."></textarea>
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendComment()" data-i18n="sessions_comments_send">Отправить</button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeCommentsModal()" data-i18n="close">Закрыть</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================================
     // Config
@@ -179,6 +199,8 @@
     const FORCE_END_URL = 'https://n8n.vseproi.de/webhook/tcs2-force-end-session';
     const REOPEN_SESSION_URL = 'https://n8n.vseproi.de/webhook/tcs2-reopen-work-session';
     const GET_MEDIA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-media';
+    const GET_COMMENTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-comments';
+    const POST_COMMENT_URL = 'https://n8n.vseproi.de/webhook/tcs2-post-session-comment';
 
     // ==========================================================
     // State
@@ -397,6 +419,7 @@
                             ${isRejected ? `<svg class="session-icon-rejected" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(s.rejection_reason || '')}"><circle cx="12" cy="12" r="9"/><path d="M6 6l12 12"/></svg>` : ''}
                             ${s.note_text ? `<svg class="session-icon-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" title="${escapeHtml(noteTextDisplay(s.note_text))}"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.5" fill="currentColor"/></svg>` : ''}
                             ${s.media_count > 0 ? `<button class="session-icon-media" onclick="event.stopPropagation(); openMediaModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-4-4 3-3-2-6 5"/></svg>${s.media_count}</button>` : ''}
+                            <button class="session-icon-comments" onclick="event.stopPropagation(); openCommentsModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4V4z"/></svg>${s.comment_count > 0 ? s.comment_count : ''}</button>
                         </div>
                         <div class="session-project">${escapeHtml(s.project_name)}</div>
                     </div>
@@ -640,6 +663,93 @@
     }
 
     // ==========================================================
+    // Session chat (comments)
+    // ==========================================================
+    let currentCommentsSessionId = null;
+    let commentsPollTimer = null;
+
+    async function openCommentsModal(sessionId) {
+        const s = sessions.find(x => x.id === sessionId);
+        currentCommentsSessionId = sessionId;
+        document.getElementById('commentsSubtitle').textContent = s ? s.employee_name + ' — ' + s.session_date : '';
+        document.getElementById('chatMessages').innerHTML = `<div class="chat-empty">${t('loading')}</div>`;
+        document.getElementById('chatMessages').dataset.firstRender = '';
+        document.getElementById('chatInput').value = '';
+        document.getElementById('commentsOverlay').classList.add('show');
+        await loadComments();
+        if (commentsPollTimer) clearInterval(commentsPollTimer);
+        commentsPollTimer = setInterval(loadComments, 5000);
+    }
+
+    function closeCommentsModal() {
+        if (commentsPollTimer) { clearInterval(commentsPollTimer); commentsPollTimer = null; }
+        document.getElementById('commentsOverlay').classList.remove('show');
+        currentCommentsSessionId = null;
+    }
+
+    async function loadComments() {
+        if (!currentCommentsSessionId) return;
+        try {
+            const res = await authFetch(GET_COMMENTS_URL + '?session_id=' + currentCommentsSessionId);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'load_failed');
+            renderComments(data.comments || []);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function renderComments(comments) {
+        const box = document.getElementById('chatMessages');
+        const wasAtBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+        if (comments.length === 0) {
+            box.innerHTML = `<div class="chat-empty">${t('sessions_comments_empty')}</div>`;
+            return;
+        }
+        box.innerHTML = comments.map(c => `
+            <div class="chat-bubble ${c.author_type === 'admin' ? 'own' : 'other'}">
+                <div class="chat-author">${escapeHtml(c.author_name || '')}</div>
+                <div class="chat-text">${escapeHtml(c.message)}</div>
+                <div class="chat-time">${escapeHtml(c.created_at)}</div>
+            </div>`).join('');
+        if (wasAtBottom || !box.dataset.firstRender) {
+            box.scrollTop = box.scrollHeight;
+            box.dataset.firstRender = 'done';
+        }
+    }
+
+    async function sendComment() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message || !currentCommentsSessionId) return;
+        const btn = document.getElementById('chatSendBtn');
+        btn.disabled = true;
+        try {
+            const res = await authFetch(POST_COMMENT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentCommentsSessionId, message })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'send_failed');
+            input.value = '';
+            await loadComments();
+        } catch (e) {
+            console.error(e);
+            alert(t('sessions_comments_send_error'));
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendComment();
+        }
+    });
+
+    // ==========================================================
     // Overlay dismiss handlers
     // ==========================================================
     document.getElementById('editSessionOverlay').addEventListener('click', (e) => {
@@ -648,8 +758,11 @@
     document.getElementById('mediaOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'mediaOverlay') closeMediaModal();
     });
+    document.getElementById('commentsOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'commentsOverlay') closeCommentsModal();
+    });
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeEditSessionModal(); closeMediaModal(); }
+        if (e.key === 'Escape') { closeEditSessionModal(); closeMediaModal(); closeCommentsModal(); }
     });
 
     // ==========================================================
