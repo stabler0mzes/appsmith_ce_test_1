@@ -409,7 +409,8 @@
         if (total === 0) {
             return `<button class="session-icon-comments add" onclick="event.stopPropagation(); openCommentsModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button>`;
         }
-        return `<button class="session-icon-comments" onclick="event.stopPropagation(); openCommentsModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4V4z"/></svg>${total}</button>`;
+        const unread = Number(s.unread_comment_count) > 0;
+        return `<button class="session-icon-comments${unread ? ' unread' : ''}" onclick="event.stopPropagation(); openCommentsModal(${s.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4V4z"/></svg>${total}</button>`;
     }
 
     function sessionRowHtml(s) {
@@ -687,6 +688,17 @@
         document.getElementById('chatMessages').dataset.firstRender = '';
         document.getElementById('chatInput').value = '';
         document.getElementById('commentsOverlay').classList.add('show');
+
+        // Optimistic: the GET below marks the thread read server-side
+        // (for the whole admin team, not per-user), but that only reaches
+        // this row's own icon on the next full renderSessions() — clear it
+        // locally right away so opening the chat doesn't leave the
+        // "unread" red icon lit until some later refresh.
+        if (s && Number(s.unread_comment_count) > 0) {
+            s.unread_comment_count = 0;
+            renderSessions();
+        }
+
         await loadComments();
         if (commentsPollTimer) clearInterval(commentsPollTimer);
         commentsPollTimer = setInterval(loadComments, 5000);

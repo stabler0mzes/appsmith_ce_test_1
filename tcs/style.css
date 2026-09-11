@@ -1031,6 +1031,8 @@ body.has-install-banner .mobile-nav-toggle { top: 68px; }
 .session-icon-comments svg { width: 13px; height: 13px; }
 .session-icon-comments.add { padding: 5px; background: transparent; border: 1px dashed var(--border); color: var(--text-faint); cursor: pointer; }
 .session-icon-comments.add:hover { background: #f5f5f6; }
+.session-icon-comments.unread { background: var(--red-bg); color: var(--red); }
+.session-icon-comments.unread:hover { background: #f6dcda; }
 
 /* Session chat (comments) — bubble-style thread between the employee
    (mobile app) and any admin (panel), one thread per session. */
