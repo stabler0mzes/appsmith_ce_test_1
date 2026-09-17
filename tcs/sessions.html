@@ -187,10 +187,12 @@
         </div>
         <div class="chat-input-row">
             <textarea id="chatInput" rows="1" data-i18n-placeholder="sessions_comments_placeholder" placeholder="Написать сообщение..."></textarea>
-            <button class="chat-voice-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()" data-i18n-title="sessions_comments_voice_title" title="Голосовое сообщение">
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0012 0M10 15v3"/></svg>
-            </button>
-            <button class="chat-send-btn" id="chatSendBtn" onclick="sendComment()" data-i18n="sessions_comments_send">Отправить</button>
+            <div class="chat-input-actions">
+                <button class="chat-voice-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()" data-i18n-title="sessions_comments_voice_title" title="Голосовое сообщение">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0012 0M10 15v3"/></svg>
+                </button>
+                <button class="chat-send-btn" id="chatSendBtn" onclick="sendComment()" data-i18n="sessions_comments_send">Отправить</button>
+            </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-cancel" onclick="closeCommentsModal()" data-i18n="close">Закрыть</button>
