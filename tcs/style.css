@@ -1109,6 +1109,56 @@ body.has-install-banner .mobile-nav-toggle { top: 68px; }
     flex-shrink: 0;
 }
 .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.chat-audio { max-width: 260px; height: 36px; }
+.chat-voice-btn {
+    background: #eeeeef;
+    color: var(--text-muted);
+    border: none;
+    border-radius: 999px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.chat-voice-btn svg { width: 18px; height: 18px; }
+.chat-voice-btn.recording { background: var(--red); color: #fff; }
+.chat-voice-indicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--red-bg);
+    color: var(--red);
+    font-size: 13px;
+}
+.chat-voice-indicator.show { display: flex; }
+.chat-voice-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--red);
+    animation: chat-voice-pulse 1s ease-in-out infinite;
+}
+@keyframes chat-voice-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+#voiceRecordTime { font-variant-numeric: tabular-nums; font-weight: 600; }
+.chat-voice-cancel {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--red);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+}
 
 @media (max-width: 860px) {
     .session-row {

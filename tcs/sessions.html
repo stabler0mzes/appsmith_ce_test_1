@@ -179,8 +179,17 @@
             </div>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-voice-indicator" id="voiceRecordIndicator">
+            <span class="chat-voice-dot"></span>
+            <span data-i18n="sessions_comments_recording">Запись голосового...</span>
+            <span id="voiceRecordTime">00:00</span>
+            <button class="chat-voice-cancel" onclick="stopVoiceRecording(true)" data-i18n="sessions_comments_recording_cancel">Отмена</button>
+        </div>
         <div class="chat-input-row">
             <textarea id="chatInput" rows="1" data-i18n-placeholder="sessions_comments_placeholder" placeholder="Написать сообщение..."></textarea>
+            <button class="chat-voice-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()" data-i18n-title="sessions_comments_voice_title" title="Голосовое сообщение">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0012 0M10 15v3"/></svg>
+            </button>
             <button class="chat-send-btn" id="chatSendBtn" onclick="sendComment()" data-i18n="sessions_comments_send">Отправить</button>
         </div>
         <div class="modal-footer">
@@ -201,6 +210,7 @@
     const GET_MEDIA_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-media';
     const GET_COMMENTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-comments';
     const POST_COMMENT_URL = 'https://n8n.vseproi.de/webhook/tcs2-post-session-comment';
+    const POST_VOICE_COMMENT_URL = 'https://n8n.vseproi.de/webhook/tcs2-post-session-voice-comment';
 
     // ==========================================================
     // State
@@ -705,6 +715,7 @@
     }
 
     function closeCommentsModal() {
+        if (voiceRecorder && voiceRecorder.state === 'recording') stopVoiceRecording(true);
         if (commentsPollTimer) { clearInterval(commentsPollTimer); commentsPollTimer = null; }
         document.getElementById('commentsOverlay').classList.remove('show');
         currentCommentsSessionId = null;
@@ -732,7 +743,9 @@
         box.innerHTML = comments.map(c => `
             <div class="chat-bubble ${c.author_type === 'admin' ? 'own' : 'other'}">
                 <div class="chat-author">${escapeHtml(c.author_name || '')}</div>
-                <div class="chat-text">${escapeHtml(c.message)}</div>
+                ${c.audio_url
+                    ? `<audio class="chat-audio" src="${escapeHtml(c.audio_url)}" controls></audio>`
+                    : `<div class="chat-text">${escapeHtml(c.message)}</div>`}
                 <div class="chat-time">${escapeHtml(c.created_at)}</div>
             </div>`).join('');
         if (wasAtBottom || !box.dataset.firstRender) {
@@ -762,6 +775,105 @@
             alert(t('sessions_comments_send_error'));
         } finally {
             btn.disabled = false;
+        }
+    }
+
+    // ==========================================================
+    // Voice comments — record with MediaRecorder, upload as a single
+    // blob on stop. No offline queueing here (unlike text messages,
+    // this is a one-shot recorded artifact) — same reasoning as the
+    // mobile app's mirror of this feature.
+    // ==========================================================
+    const VOICE_MAX_MS = 120000; // 2 minutes
+    let voiceRecorder = null;
+    let voiceChunks = [];
+    let voiceStartTime = 0;
+    let voiceTimerInterval = null;
+    let voiceMaxTimeout = null;
+
+    function formatVoiceTime(totalSeconds) {
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function updateVoiceTimer() {
+        const seconds = Math.floor((Date.now() - voiceStartTime) / 1000);
+        document.getElementById('voiceRecordTime').textContent = formatVoiceTime(seconds);
+    }
+
+    async function toggleVoiceRecording() {
+        if (voiceRecorder && voiceRecorder.state === 'recording') {
+            stopVoiceRecording(false);
+            return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            alert(t('sessions_comments_voice_unsupported'));
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            voiceChunks = [];
+            voiceRecorder = new MediaRecorder(stream);
+            voiceRecorder.addEventListener('dataavailable', (e) => {
+                if (e.data && e.data.size > 0) voiceChunks.push(e.data);
+            });
+            voiceRecorder.addEventListener('stop', () => {
+                stream.getTracks().forEach(track => track.stop());
+            });
+            voiceRecorder.start();
+            voiceStartTime = Date.now();
+            document.getElementById('voiceRecordBtn').classList.add('recording');
+            document.getElementById('voiceRecordIndicator').classList.add('show');
+            document.getElementById('chatInput').disabled = true;
+            updateVoiceTimer();
+            voiceTimerInterval = setInterval(updateVoiceTimer, 250);
+            voiceMaxTimeout = setTimeout(() => stopVoiceRecording(false), VOICE_MAX_MS);
+        } catch (e) {
+            alert(t('sessions_comments_mic_denied'));
+        }
+    }
+
+    async function stopVoiceRecording(cancel) {
+        if (!voiceRecorder) return;
+        const durationSeconds = Math.round((Date.now() - voiceStartTime) / 1000);
+        clearInterval(voiceTimerInterval);
+        clearTimeout(voiceMaxTimeout);
+        document.getElementById('voiceRecordBtn').classList.remove('recording');
+        document.getElementById('voiceRecordIndicator').classList.remove('show');
+        document.getElementById('chatInput').disabled = false;
+
+        const recorder = voiceRecorder;
+        voiceRecorder = null;
+        await new Promise((resolve) => {
+            recorder.addEventListener('stop', resolve, { once: true });
+            if (recorder.state !== 'inactive') recorder.stop();
+            else resolve();
+        });
+
+        if (cancel || durationSeconds < 1) {
+            voiceChunks = [];
+            return;
+        }
+        const blob = new Blob(voiceChunks, { type: recorder.mimeType || 'audio/webm' });
+        voiceChunks = [];
+        await sendVoiceComment(blob, durationSeconds);
+    }
+
+    async function sendVoiceComment(blob, durationSeconds) {
+        if (!currentCommentsSessionId) return;
+        try {
+            const form = new FormData();
+            form.append('session_id', currentCommentsSessionId);
+            form.append('duration_seconds', durationSeconds);
+            form.append('file', blob, 'voice.webm');
+            const res = await authFetch(POST_VOICE_COMMENT_URL, { method: 'POST', body: form });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'send_failed');
+            await loadComments();
+        } catch (e) {
+            console.error(e);
+            alert(t('sessions_comments_send_error'));
         }
     }
 
