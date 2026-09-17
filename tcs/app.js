@@ -326,6 +326,26 @@ async function unsubscribeFromPush() {
     }
 }
 
+// Same reasoning as the mobile app: a subscription can go stale with no
+// visible sign (site data cleared, OS invalidated the registration),
+// and nobody re-taps the bell on their own to fix it. Silently refresh
+// on every page load for anyone who already granted permission AND is
+// currently logged in (getAuthToken() check — authFetch() redirects to
+// login.html on a 401, which we don't want firing from here on, say,
+// the login page itself for someone with stale permission from a past
+// session). Never prompts for permission — that stays behind the bell.
+async function ensurePushSubscriptionFresh() {
+    if (!pushSupported()) return;
+    if (!getAuthToken()) return;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    try {
+        await subscribeToPush();
+    } catch (e) {
+        // best-effort — next page load retries
+    }
+}
+ensurePushSubscriptionFresh();
+
 function refreshNotifyBtn() {
     const btn = document.getElementById('sidebarNotifyBtn');
     if (!btn) return;

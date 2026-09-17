@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tcs2-admin-v1';
+const CACHE_NAME = 'tcs2-admin-v2';
 const APP_SHELL = [
     'login.html',
     'dashboard.html',
