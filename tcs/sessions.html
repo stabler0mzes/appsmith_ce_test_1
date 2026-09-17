@@ -691,10 +691,12 @@
     // ==========================================================
     let currentCommentsSessionId = null;
     let commentsPollTimer = null;
+    let renderedCommentIds = [];
 
     async function openCommentsModal(sessionId) {
         const s = sessions.find(x => x.id === sessionId);
         currentCommentsSessionId = sessionId;
+        renderedCommentIds = [];
         document.getElementById('commentsSubtitle').textContent = s ? s.employee_name + ' — ' + s.session_date : '';
         document.getElementById('chatMessages').innerHTML = `<div class="chat-empty">${t('loading')}</div>`;
         document.getElementById('chatMessages').dataset.firstRender = '';
@@ -735,25 +737,47 @@
         }
     }
 
-    function renderComments(comments) {
-        const box = document.getElementById('chatMessages');
-        const wasAtBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
-        if (comments.length === 0) {
-            box.innerHTML = `<div class="chat-empty">${t('sessions_comments_empty')}</div>`;
-            return;
-        }
-        box.innerHTML = comments.map(c => `
+    function commentBubbleHtml(c) {
+        return `
             <div class="chat-bubble ${c.author_type === 'admin' ? 'own' : 'other'}">
                 <div class="chat-author">${escapeHtml(c.author_name || '')}</div>
                 ${c.audio_url
                     ? `<audio class="chat-audio" src="${escapeHtml(c.audio_url)}" controls></audio>`
                     : `<div class="chat-text">${escapeHtml(c.message)}</div>`}
                 <div class="chat-time">${escapeHtml(c.created_at)}</div>
-            </div>`).join('');
-        if (wasAtBottom || !box.dataset.firstRender) {
-            box.scrollTop = box.scrollHeight;
-            box.dataset.firstRender = 'done';
+            </div>`;
+    }
+
+    // Comments are only ever appended, never edited/reordered, so the
+    // 5s poll can just add whatever's new to the end of the DOM instead
+    // of rebuilding the whole list — rebuilding would tear down and
+    // recreate every <audio> element, which stops playback dead the
+    // moment someone hits play on a voice message while the poll fires.
+    function renderComments(comments) {
+        const box = document.getElementById('chatMessages');
+        if (comments.length === 0) {
+            box.innerHTML = `<div class="chat-empty">${t('sessions_comments_empty')}</div>`;
+            renderedCommentIds = [];
+            return;
         }
+        const newIds = comments.map(c => c.id);
+        const isAppendOnly = renderedCommentIds.length > 0
+            && renderedCommentIds.length <= newIds.length
+            && renderedCommentIds.every((id, i) => id === newIds[i]);
+        const wasAtBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+
+        if (isAppendOnly) {
+            const newHtml = comments.slice(renderedCommentIds.length).map(commentBubbleHtml).join('');
+            if (newHtml) box.insertAdjacentHTML('beforeend', newHtml);
+            if (wasAtBottom) box.scrollTop = box.scrollHeight;
+        } else {
+            box.innerHTML = comments.map(commentBubbleHtml).join('');
+            if (wasAtBottom || !box.dataset.firstRender) {
+                box.scrollTop = box.scrollHeight;
+                box.dataset.firstRender = 'done';
+            }
+        }
+        renderedCommentIds = newIds;
     }
 
     async function sendComment() {
