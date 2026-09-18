@@ -40,11 +40,45 @@
 </div>
 </div>
 
+<!-- Session chat modal -->
+<div class="overlay" id="commentsOverlay">
+    <div class="modal chat-modal">
+        <div class="modal-header">
+            <div>
+                <div class="modal-title" data-i18n="sessions_comments_title">Обсуждение смены</div>
+                <div class="modal-subtitle" id="commentsSubtitle"></div>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-voice-indicator" id="voiceRecordIndicator">
+            <span class="chat-voice-dot"></span>
+            <span data-i18n="sessions_comments_recording">Запись голосового...</span>
+            <span id="voiceRecordTime">00:00</span>
+            <button class="chat-voice-cancel" onclick="stopVoiceRecording(true)" data-i18n="sessions_comments_recording_cancel">Отмена</button>
+        </div>
+        <div class="chat-input-row">
+            <textarea id="chatInput" rows="1" data-i18n-placeholder="sessions_comments_placeholder" placeholder="Написать сообщение..."></textarea>
+            <div class="chat-input-actions">
+                <button class="chat-voice-btn" id="voiceRecordBtn" onclick="toggleVoiceRecording()" data-i18n-title="sessions_comments_voice_title" title="Голосовое сообщение">
+                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="2" width="6" height="10" rx="3"/><path d="M4 9a6 6 0 0012 0M10 15v3"/></svg>
+                </button>
+                <button class="chat-send-btn" id="chatSendBtn" onclick="sendComment()" data-i18n="sessions_comments_send">Отправить</button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-cancel" onclick="closeCommentsModal()" data-i18n="close">Закрыть</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================================
     // Config
     // ==========================================================
     const GET_ACTIVE_EMPLOYEES_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-active-employees';
+    const GET_COMMENTS_URL = 'https://n8n.vseproi.de/webhook/tcs2-get-session-comments';
+    const POST_COMMENT_URL = 'https://n8n.vseproi.de/webhook/tcs2-post-session-comment';
+    const POST_VOICE_COMMENT_URL = 'https://n8n.vseproi.de/webhook/tcs2-post-session-voice-comment';
 
     // ==========================================================
     // State
@@ -133,6 +167,7 @@
                         <div class="card-name">${escapeHtml(name)}</div>
                         <div class="card-username">${t('dashboard_since', { time: escapeHtml(emp.start_time) })}</div>
                     </div>
+                    ${commentsButtonHtml(emp)}
                 </div>
                 <div class="card-meta">
                     <div class="card-meta-row">
@@ -141,6 +176,28 @@
                     </div>
                 </div>
             </div>`;
+    }
+
+    // Same chat as "Рабочие сессии" (session_comments, text or voice) —
+    // reachable straight from here too, so the admin doesn't have to go
+    // find the matching session on another page just to answer someone
+    // mid-shift. Sessions here are always active by construction (this
+    // whole page only ever lists currently-working employees).
+    function commentsButtonHtml(emp) {
+        const total = Number(emp.comment_count) || 0;
+        if (total === 0) {
+            return `<button class="session-icon-comments add" onclick="event.stopPropagation(); openCommentsModal(${emp.session_id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></button>`;
+        }
+        const unread = Number(emp.unread_comment_count) > 0;
+        return `<button class="session-icon-comments${unread ? ' unread' : ''}" onclick="event.stopPropagation(); openCommentsModal(${emp.session_id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v12H8l-4 4V4z"/></svg>${total}</button>`;
+    }
+
+    function findActiveEmployee(sessionId) {
+        for (const obj of objects) {
+            const found = obj.employees.find(e => e.session_id === sessionId);
+            if (found) return found;
+        }
+        return null;
     }
 
     // ==========================================================
@@ -178,6 +235,235 @@
             tickTimer = null;
         }
     }
+
+    // ==========================================================
+    // Session chat (comments) — same feature as "Рабочие сессии",
+    // opened straight from an active-employee card here instead.
+    // ==========================================================
+    let currentCommentsSessionId = null;
+    let commentsPollTimer = null;
+    let renderedCommentIds = [];
+
+    async function openCommentsModal(sessionId) {
+        const emp = findActiveEmployee(sessionId);
+        currentCommentsSessionId = sessionId;
+        renderedCommentIds = [];
+        const empName = emp ? (emp.full_name || (emp.name + ' ' + emp.surname)) : '';
+        document.getElementById('commentsSubtitle').textContent = empName;
+        document.getElementById('chatMessages').innerHTML = `<div class="chat-empty">${t('loading')}</div>`;
+        document.getElementById('chatMessages').dataset.firstRender = '';
+        document.getElementById('chatInput').value = '';
+        document.getElementById('commentsOverlay').classList.add('show');
+
+        // Optimistic: the GET below marks the thread read server-side
+        // (for the whole admin team, not per-user), but that only reaches
+        // this card's own icon on the next full render() — clear it
+        // locally right away so opening the chat doesn't leave the
+        // "unread" red icon lit until some later refresh.
+        if (emp && Number(emp.unread_comment_count) > 0) {
+            emp.unread_comment_count = 0;
+            render();
+        }
+
+        await loadComments();
+        if (commentsPollTimer) clearInterval(commentsPollTimer);
+        commentsPollTimer = setInterval(loadComments, 5000);
+    }
+
+    function closeCommentsModal() {
+        if (voiceRecorder && voiceRecorder.state === 'recording') stopVoiceRecording(true);
+        if (commentsPollTimer) { clearInterval(commentsPollTimer); commentsPollTimer = null; }
+        document.getElementById('commentsOverlay').classList.remove('show');
+        currentCommentsSessionId = null;
+    }
+
+    async function loadComments() {
+        if (!currentCommentsSessionId) return;
+        try {
+            const res = await authFetch(GET_COMMENTS_URL + '?session_id=' + currentCommentsSessionId);
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'load_failed');
+            renderComments(data.comments || []);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function commentBubbleHtml(c) {
+        return `
+            <div class="chat-bubble ${c.author_type === 'admin' ? 'own' : 'other'}">
+                <div class="chat-author">${escapeHtml(c.author_name || '')}</div>
+                ${c.audio_url
+                    ? `<audio class="chat-audio" src="${escapeHtml(c.audio_url)}" controls></audio>`
+                    : `<div class="chat-text">${escapeHtml(c.message)}</div>`}
+                <div class="chat-time">${escapeHtml(c.created_at)}</div>
+            </div>`;
+    }
+
+    // Comments are only ever appended, never edited/reordered, so the
+    // 5s poll can just add whatever's new to the end of the DOM instead
+    // of rebuilding the whole list — rebuilding would tear down and
+    // recreate every <audio> element, which stops playback dead the
+    // moment someone hits play on a voice message while the poll fires.
+    function renderComments(comments) {
+        const box = document.getElementById('chatMessages');
+        if (comments.length === 0) {
+            box.innerHTML = `<div class="chat-empty">${t('sessions_comments_empty')}</div>`;
+            renderedCommentIds = [];
+            return;
+        }
+        const newIds = comments.map(c => c.id);
+        const isAppendOnly = renderedCommentIds.length > 0
+            && renderedCommentIds.length <= newIds.length
+            && renderedCommentIds.every((id, i) => id === newIds[i]);
+        const wasAtBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+
+        if (isAppendOnly) {
+            const newHtml = comments.slice(renderedCommentIds.length).map(commentBubbleHtml).join('');
+            if (newHtml) box.insertAdjacentHTML('beforeend', newHtml);
+            if (wasAtBottom) box.scrollTop = box.scrollHeight;
+        } else {
+            box.innerHTML = comments.map(commentBubbleHtml).join('');
+            if (wasAtBottom || !box.dataset.firstRender) {
+                box.scrollTop = box.scrollHeight;
+                box.dataset.firstRender = 'done';
+            }
+        }
+        renderedCommentIds = newIds;
+    }
+
+    async function sendComment() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message || !currentCommentsSessionId) return;
+        const btn = document.getElementById('chatSendBtn');
+        btn.disabled = true;
+        try {
+            const res = await authFetch(POST_COMMENT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: currentCommentsSessionId, message })
+            });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'send_failed');
+            input.value = '';
+            await loadComments();
+        } catch (e) {
+            console.error(e);
+            alert(t('sessions_comments_send_error'));
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ==========================================================
+    // Voice comments — record with MediaRecorder, upload as a single
+    // blob on stop. No offline queueing here (unlike text messages,
+    // this is a one-shot recorded artifact) — same reasoning as the
+    // mobile app's mirror of this feature.
+    // ==========================================================
+    const VOICE_MAX_MS = 120000; // 2 minutes
+    let voiceRecorder = null;
+    let voiceChunks = [];
+    let voiceStartTime = 0;
+    let voiceTimerInterval = null;
+    let voiceMaxTimeout = null;
+
+    function formatVoiceTime(totalSeconds) {
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function updateVoiceTimer() {
+        const seconds = Math.floor((Date.now() - voiceStartTime) / 1000);
+        document.getElementById('voiceRecordTime').textContent = formatVoiceTime(seconds);
+    }
+
+    async function toggleVoiceRecording() {
+        if (voiceRecorder && voiceRecorder.state === 'recording') {
+            stopVoiceRecording(false);
+            return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            alert(t('sessions_comments_voice_unsupported'));
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            voiceChunks = [];
+            voiceRecorder = new MediaRecorder(stream);
+            voiceRecorder.addEventListener('dataavailable', (e) => {
+                if (e.data && e.data.size > 0) voiceChunks.push(e.data);
+            });
+            voiceRecorder.addEventListener('stop', () => {
+                stream.getTracks().forEach(track => track.stop());
+            });
+            voiceRecorder.start();
+            voiceStartTime = Date.now();
+            document.getElementById('voiceRecordBtn').classList.add('recording');
+            document.getElementById('voiceRecordIndicator').classList.add('show');
+            document.getElementById('chatInput').disabled = true;
+            updateVoiceTimer();
+            voiceTimerInterval = setInterval(updateVoiceTimer, 250);
+            voiceMaxTimeout = setTimeout(() => stopVoiceRecording(false), VOICE_MAX_MS);
+        } catch (e) {
+            alert(t('sessions_comments_mic_denied'));
+        }
+    }
+
+    async function stopVoiceRecording(cancel) {
+        if (!voiceRecorder) return;
+        const durationSeconds = Math.round((Date.now() - voiceStartTime) / 1000);
+        clearInterval(voiceTimerInterval);
+        clearTimeout(voiceMaxTimeout);
+        document.getElementById('voiceRecordBtn').classList.remove('recording');
+        document.getElementById('voiceRecordIndicator').classList.remove('show');
+        document.getElementById('chatInput').disabled = false;
+
+        const recorder = voiceRecorder;
+        voiceRecorder = null;
+        await new Promise((resolve) => {
+            recorder.addEventListener('stop', resolve, { once: true });
+            if (recorder.state !== 'inactive') recorder.stop();
+            else resolve();
+        });
+
+        if (cancel || durationSeconds < 1) {
+            voiceChunks = [];
+            return;
+        }
+        const blob = new Blob(voiceChunks, { type: recorder.mimeType || 'audio/webm' });
+        voiceChunks = [];
+        await sendVoiceComment(blob, durationSeconds);
+    }
+
+    async function sendVoiceComment(blob, durationSeconds) {
+        if (!currentCommentsSessionId) return;
+        try {
+            const form = new FormData();
+            form.append('session_id', currentCommentsSessionId);
+            form.append('duration_seconds', durationSeconds);
+            form.append('file', blob, 'voice.webm');
+            const res = await authFetch(POST_VOICE_COMMENT_URL, { method: 'POST', body: form });
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error || 'send_failed');
+            await loadComments();
+        } catch (e) {
+            console.error(e);
+            alert(t('sessions_comments_send_error'));
+        }
+    }
+
+    document.getElementById('chatInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendComment();
+        }
+    });
+    document.getElementById('commentsOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'commentsOverlay') closeCommentsModal();
+    });
 
     // ==========================================================
     // Init

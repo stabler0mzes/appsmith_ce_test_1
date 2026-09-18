@@ -499,6 +499,7 @@ body.has-install-banner .mobile-nav-toggle { top: 68px; }
     align-items: center;
     gap: 12px;
 }
+.card-head > .session-icon-comments { margin-left: auto; flex-shrink: 0; }
 
 .avatar {
     width: 44px;
