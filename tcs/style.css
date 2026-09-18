@@ -340,7 +340,7 @@ body.report-body {
    `height:100vh`/sticky positioning and the mobile hamburger's fixed
    `top` are compensated separately below since body padding alone
    doesn't reach position:fixed descendants. z-index kept below .overlay
-   (50) so an open modal still visually covers the banner. */
+   (70) so an open modal still visually covers the banner. */
 body.has-install-banner { padding-top: 54px; }
 body.has-install-banner .sidebar { height: calc(100vh - 54px); }
 body.has-install-banner .mobile-nav-toggle { top: 68px; }
@@ -1287,7 +1287,12 @@ body.has-install-banner .mobile-nav-toggle { top: 68px; }
     align-items: center;
     justify-content: center;
     padding: 20px;
-    z-index: 50;
+    /* Must beat the mobile sidebar apparatus (.mobile-nav-toggle: 60,
+       .sidebar-backdrop: 55, .sidebar off-canvas: 65) — a modal is
+       exclusive/blocking, so it should never let the hamburger button
+       or drawer render on top of it on narrow screens. Was 50, which
+       let .mobile-nav-toggle (60) sit above every modal's header. */
+    z-index: 70;
     overflow-y: auto;
 }
 .overlay.show { display: flex; }
